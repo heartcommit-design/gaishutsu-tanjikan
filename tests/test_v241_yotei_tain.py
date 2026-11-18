@@ -55,8 +55,8 @@ def main():
         # ================= (c) 版 =================
         html = open(os.path.join(APP, 'index.html'), encoding='utf-8').read()
         sw = open(os.path.join(APP, 'sw.js'), encoding='utf-8').read()
-        ok(re.search(r"APP_VERSION='0\.1\.0'", html), 'APP_VERSION')
-        ok("CACHE = 'gaishutsu-tanjikan-v0.1.0'" in sw, 'sw.js CACHE')
+        ok(re.search(r"APP_VERSION='0\.2\.0'", html), 'APP_VERSION')
+        ok("CACHE = 'gaishutsu-tanjikan-v0.2.0'" in sw, 'sw.js CACHE')
 
         # ================= (a) 予定の詳細の自動で閉じる =================
         ctx, pg = open_page(b)

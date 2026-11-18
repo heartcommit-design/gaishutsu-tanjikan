@@ -53,7 +53,8 @@ def main():
         pg.click('#submitBtn'); pg.wait_for_timeout(1200)
         assert pg.evaluate("outings.filter(o=>o.status==='out').length") == 8
         assert pg.evaluate("tags.find(t=>t.id==='T-05').status") == 'inuse'
-        assert pg.evaluate("dbKeys('photos').then(k=>k.length)") == 18  # デモ4人の写真＋予定13件の見本写真（2.4.0）＋新規1枚
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 18  # デモ4人の写真＋予定13件の見本写真（2.4.0）＋新規1枚
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>String(x).startsWith('prep:')).length)") == 9  # 0.2.0：いつもの外出の撮っておいた写真（デモ9人）
         assert pg.evaluate("dbKeys('photos').then(k=>k.includes(outings.find(o=>o.pid==='P0001').id))")
 
         # 帰院 → 写真が消え、タグが空く
@@ -61,7 +62,7 @@ def main():
         card.locator('[data-act=return]').click()
         pg.fill('#dlgForm input[name=nurse]', '看護師C'); pg.click('#dlgActions button.ok'); pg.wait_for_timeout(1200)
         assert not pg.evaluate("dbKeys('photos').then(k=>k.includes(outings.find(o=>o.pid==='P0001').id))"), '帰院後も写真が残っている'
-        assert pg.evaluate("dbKeys('photos').then(k=>k.length)") == 17, '外出中のデモ4人・予定の写真まで消えた'
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 17, '外出中のデモ4人・予定の写真まで消えた'  # 0.2.0：いつもの外出の撮っておいた写真（prep:）は数えない
         assert pg.evaluate("tags.find(t=>t.id==='T-05').status") == 'available'
         assert pg.evaluate("outings.find(o=>o.pid==='P0001').status") == 'returned'
 

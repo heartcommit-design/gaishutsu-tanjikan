@@ -36,3 +36,4 @@ test_v230_shinki_kaizen
 test_v230_shinki_ui
 test_v240_jikki_shiteki
 test_v241_yotei_tain
+test_v020_itsumo

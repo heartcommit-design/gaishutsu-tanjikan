@@ -675,6 +675,43 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
  .card{break-inside:avoid;animation:none!important;box-shadow:none!important}
  section{display:none!important}#sec-active{display:block!important}
 }
+
+/* ---------- 0.2.0 いつもの外出 ---------- */
+.it-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}.it-head h2{margin:0}.it-head .hint{margin:0}.it-head .sp{flex:1}
+.it-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.it-sum span{padding:4px 12px;border-radius:14px;font-size:15px;font-weight:700;background:var(--mutedbg);color:var(--mutedtx);white-space:nowrap}
+.it-sum .o{background:var(--warnbg);color:var(--warntx)}.it-sum .g{background:var(--okbg);color:var(--oktx)}.it-sum .r{background:var(--badbg);color:var(--badtx)}
+.it-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.it-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.it-t{min-width:0;overflow:hidden;display:grid;grid-template-columns:64px minmax(0,1fr);gap:6px 12px;align-items:center;padding:12px;border-radius:18px;
+ background:var(--glass2);border:1px solid var(--edge);border-left:8px solid var(--pri);box-shadow:var(--hl),var(--shadow);min-height:132px}
+.it-t.out{border-left-color:var(--warn);background:var(--warnbg)}
+.it-t.over{border:2px solid var(--bad);border-left-width:10px;background:var(--badbg)}
+.it-ph img{display:block;width:64px;height:74px;object-fit:cover;border-radius:8px;background:var(--mutedbg);cursor:zoom-in}
+.it-noph{width:64px;height:74px;border-radius:8px;border:2px dashed var(--warn);display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:700;color:var(--warntx);background:var(--warnbg);line-height:1.25}
+.it-noph.big{width:150px;height:172px;font-size:18px}
+.it-hd{min-width:0}
+.it-nm{font-size:21px;font-weight:800;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it-meta{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5}
+.it-tag{display:inline-block;padding:1px 8px;border-radius:8px;background:var(--tagbg);color:var(--tagtx);font-size:13px;font-weight:700;margin-right:4px;white-space:nowrap}
+.it-tag.none{background:var(--mutedbg);color:var(--mutedtx)}
+.it-st{grid-column:1/-1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px;font-weight:700;white-space:nowrap}
+.it-st>span{min-width:0;overflow:hidden;text-overflow:ellipsis}.it-st small{font-weight:600;color:var(--sub);margin-left:2px}
+.it-b{flex:0 0 auto;font-size:18px;font-weight:800;min-height:44px;padding:6px 16px}
+.it-sub{color:var(--sub)}.it-okt{color:var(--oktx)}.it-warnt{color:var(--warntx)}.it-outt{color:var(--warntx)}.it-badt{color:var(--badtx)}
+.it-dsub{color:var(--sub);font-size:15px;margin:-4px 0 6px}
+.it-drow{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:start;margin:8px 0}
+.it-dph img{display:block;width:150px;height:172px;object-fit:cover;border-radius:12px;background:var(--mutedbg)}
+.it-q{font-size:18px;font-weight:800;margin-bottom:8px}
+.it-cam{display:inline-flex;align-items:center;color:var(--ink);margin:0 0 6px}
+.it-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:16px;margin:4px 0}.it-kv b{white-space:nowrap}
+.it-lbl{font-size:15px;font-weight:800;margin:10px 0 4px}
+.it-due .btn{white-space:nowrap}
+.it-pick{margin-top:8px;max-height:52vh;overflow:auto}
+.it-prow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line2)}.it-prow .sp{flex:1}.it-prow b{white-space:nowrap}
+@media (max-width:1100px) and (min-width:700px){nav button{font-size:15px;padding:0 9px}nav .cnt{margin-left:3px;min-width:22px;padding:0 5px}}
+.own-b{display:inline-block;padding:3px 12px;border-radius:12px;background:var(--psel);color:var(--pseltx);font-weight:800;font-size:14px;white-space:nowrap}
+#dlgActions .btn{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -716,6 +753,7 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
   <button data-tab="active" class="active">外出・外泊中<span class="cnt" id="cntActive">0</span><span class="cnt bad" id="cntAlert" hidden>0</span></button>
   <button data-tab="plan">予定<span class="cnt" id="cntPlan">0</span></button>
   <button data-tab="new">＋ 新規登録</button>
+  <button data-tab="itsumo">いつもの外出<span class="cnt" id="cntItsumo">0</span></button>
   <button data-tab="calendar">カレンダー</button>
   <button data-tab="history">日別一覧</button>
   <button data-tab="stats">集計</button>
@@ -851,6 +889,15 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
 </section>
 
 <!-- 日別一覧 -->
+<!-- 0.2.0 いつもの外出 -->
+<section id="sec-itsumo">
+  <div class="it-head"><h2 id="itTitle">いつもの外出</h2><span class="hint" id="itHelp"></span><span class="sp"></span>
+    <button type="button" class="btn" id="itPrepBtn">📷 写真の準備</button><button type="button" class="btn" id="itMembers">人を足す・外す</button></div>
+  <div class="it-sum" id="itSum"></div>
+  <div class="it-grid" id="itGrid"></div>
+  <input type="file" accept="image/*" capture="environment" id="itPhotoIn" hidden>
+</section>
+
 <section id="sec-history">
   <h2 id="hTitle">日別一覧</h2>
   <div class="toolbar">
@@ -1001,7 +1048,7 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
   <div class="panel" style="margin-top:14px">
     <h2>デモ</h2>
     <div class="quick" style="margin-top:0"><button class="btn" type="button" id="demoIn">デモデータを入れる</button><button class="btn" type="button" id="demoOut">デモデータを消す</button></div>
-    <p class="hint">説明・練習用。押すと<b>東1病棟の入院患者54人（架空）</b>が患者台帳に入り、外出・外泊中7人（うち4人は歴史上の人物の名前を借りた架空の患者で、服装写真つき）、今日から30日先までの予定19件、過去10日の帰院済みの記録10件がある状態から始まります（本番でCSVから病棟の患者を取り込んだ状態を想定）。看護師名の一覧には<b>架空の職員30人</b>（看護師24人・PSW 6人）が足されます。デモの患者・職員は「(デモ)」付きで、「デモデータを消す」でまとめて削除できます（自分で登録した看護師名は消えません）。</p>
+    <p class="hint">説明・練習用。押すと<b>東1病棟の入院患者54人（架空）</b>が患者台帳に入り、外出・外泊中7人（うち4人は歴史上の人物の名前を借りた架空の患者で、服装写真つき）、今日から30日先までの予定19件、過去10日の帰院済みの記録10件がある状態から始まります（本番でCSVから病棟の患者を取り込んだ状態を想定）。「いつもの外出」には12人（専用タグつき・9人は服装写真を撮っておいた状態）が入ります。看護師名の一覧には<b>架空の職員30人</b>（看護師24人・PSW 6人）が足されます。デモの患者・職員は「(デモ)」付きで、「デモデータを消す」でまとめて削除できます（自分で登録した看護師名は消えません）。</p>
   </div>
   <div class="panel" style="margin-top:14px">
     <h2>データ</h2>
@@ -1198,8 +1245,9 @@ async function loadAll(){
 // 帰院済み・削除済みの記録に写真が残っていれば必ず消す（安全策）
 async function purgePhotos(){
   const keys=await dbKeys('photos');
-  for(const k of keys){const o=outings.find(x=>x.id===k);
+  for(const k of keys){if(typeof k==='string'&&k.startsWith('prep:'))continue;const o=outings.find(x=>x.id===k);
     if(!o||o.status==='returned'){await dbDel('photos',k);if(o&&o.hasPhoto){o.hasPhoto=false;o.photoDeletedAt=Date.now();await saveOuting(o);}}}
+  await purgePrep();
 }
 async function getPhotoURL(id){if(photoURL[id])return photoURL[id];const b=await dbGet('photos',id);if(!b)return null;photoURL[id]=URL.createObjectURL(b);return photoURL[id];}
 function dropPhotoURL(id){if(photoURL[id]){URL.revokeObjectURL(photoURL[id]);delete photoURL[id];}}
@@ -1271,7 +1319,7 @@ document.addEventListener('pointerdown',ensureAudio);document.addEventListener('
 
 /* ---------- 画面切替 ---------- */
 function showTab(name){$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));{const ab=document.querySelector(`nav button[data-tab="${name}"]`);if(ab&&IS_PHONE)ab.scrollIntoView({block:'nearest',inline:'center'});}$$('main section').forEach(s=>s.classList.toggle('active',s.id==='sec-'+name));
-  if(name==='new')prepareNewForm();if(name==='history')renderHistory();if(name==='tags')renderTags();if(name==='patients'){ptView='in';renderPatients();}if(name==='plan')renderPlans();if(name==='calendar')renderCalendar();if(name==='stats')renderStats();if(name==='settings')renderSettings();window.scrollTo(0,0);}
+  if(name==='new')prepareNewForm();if(name==='itsumo'){itPrepMode=false;renderItsumo(true);}if(name==='history')renderHistory();if(name==='tags')renderTags();if(name==='patients'){ptView='in';renderPatients();}if(name==='plan')renderPlans();if(name==='calendar')renderCalendar();if(name==='stats')renderStats();if(name==='settings')renderSettings();window.scrollTo(0,0);}
 $$('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 /* ---------- 2.4.0 タブの帯を、スクロールしても上（ヘッダー・アラーム帯の下）に残す ---------- */
 // 上に固定する部分（.topbar）の高さを測って、タブの帯をその下に止める。スクロールで動かす時の余白（scroll-padding）にも使う
@@ -1477,7 +1525,7 @@ async function releasePlan(o){
 }
 function planPatient(o){return patients.find(x=>x.id===o.patientId)||(o.pid?patients.find(x=>x.pid===o.pid):null)||null;}
 function goTagOptions(o){
-  const av=tags.filter(t=>t.status==='available'||(t.status==='reserved'&&t.outingId===o.id));
+  const pt0=planPatient(o);const av=tags.filter(t=>(t.status==='available'&&tagFree(t,pt0))||(t.status==='reserved'&&t.outingId===o.id));
   return (o.tagId?'':'<option value="__">— タグを選んでください —</option>')+av.map(t=>`<option value="${esc(t.id)}"${t.id===o.tagId?' selected':''}>${esc(t.id)}${t.findName&&t.findName!==t.id?'（'+esc(t.findName)+'）':''}${t.status==='reserved'?'（この予定で予約中）':''}</option>`).join('')+'<option value="">タグなし（持たせない）</option>';
 }
 function goConsentHtml(o,tag){
@@ -1492,7 +1540,7 @@ function dlgGo(o){
   const now=Date.now();
   if(now>=o.dueAt){toast('帰院予定の時刻をすでに過ぎています。「内容を確認・変更して出発」で帰院予定を直してください。',7000);return;}
   const diff=Math.round((now-o.departAt)/60000);
-  const nAv=tags.filter(t=>t.status==='available').length;
+  const nAv=tags.filter(t=>t.status==='available'&&tagFree(t,planPatient(o))).length;
   openDlg(`出発（GO）：${o.name}`,`
     <dl class="info"><dt>出発</dt><dd><b class="nw">今（${fmt(now)}）</b>${Math.abs(diff)>=1?` <span class="sub nw">予定より${dur(Math.abs(diff)*60000)}${diff>0?'遅い':'早い'}</span>`:''}</dd>
     <dt>帰院予定</dt><dd><b class="nw">${fmt(o.dueAt)}</b><span class="nw">（変わりません）</span></dd></dl>
@@ -1614,7 +1662,7 @@ function dlgReturn(o){
   openDlg(`帰院登録：${o.name}`,`
     <label>帰院時刻<input type="datetime-local" name="at" value="${toLocalInput(Date.now())}"></label>
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList"></label>
-    ${o.tagId?`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`:''}
+    ${o.tagId?(tags.find(x=>x.id===o.tagId&&x.owner&&x.owner===o.patientId)?`<p class="hint">専用タグ <b>${esc(o.tagId)}</b> は本人が持ったままにします（回収しません）。</p>`:`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`):''}
     <h3 style="font-size:17px;margin:12px 0 2px">帰院時の確認（任意）</h3>
     <div class="rc">${RC_ITEMS.map(([k,l])=>`<span class="rl">${l}</span><label><input type="checkbox" name="rc_${k}">確認済</label><input name="rcm_${k}" placeholder="メモ（任意）">`).join('')}</div>
     <label>その他特記事項<textarea name="rc_other" placeholder="任意"></textarea></label>
@@ -1631,8 +1679,7 @@ function dlgReturn(o){
     o.rc={other:val(f,'rc_other')};RC_ITEMS.forEach(([k])=>{o.rc[k]={ok:!!f.elements['rc_'+k].checked,memo:val(f,'rcm_'+k)};});
     addLog(o,'帰院'+(val(f,'memo')?'：'+val(f,'memo'):''),nurse);if(rcText(o))addLog(o,'帰院時確認：'+rcText(o),nurse);rememberNurse(nurse);
     if(o.hasPhoto){await dbDel('photos',o.id);dropPhotoURL(o.id);o.hasPhoto=false;o.photoDeletedAt=Date.now();addLog(o,'服装写真を削除（自動）');}
-    if(o.tagId){const t=tags.find(x=>x.id===o.tagId);const back=f.elements.tagBack?.checked;
-      if(t){t.outingId=null;t.status=back?'available':'missing';await saveTag(t);}addLog(o,back?`タグ ${o.tagId} 回収`:`タグ ${o.tagId} 未回収`,nurse);o.tagReturned=!!back;}
+    if(o.tagId)await itTagOnReturn(o,!!f.elements.tagBack?.checked,nurse);
     await saveOuting(o);lastSig='';tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':''));
   }}]);
 }
@@ -1763,11 +1810,11 @@ async function dlgPhoto(o){const u=await getPhotoURL(o.id);if(!u)return;openDlg(
 const nf=$('#newForm');
 function buildTagOptions(){
   const sel=$('#tagSelect');const cur=sel.value;const pid=nf.dataset.planId;
-  const av=tags.filter(t=>t.status==='available'||(pid&&t.status==='reserved'&&t.outingId===pid));
+  const fpt=formPatient();const av=tags.filter(t=>(t.status==='available'&&tagFree(t,fpt))||(pid&&t.status==='reserved'&&t.outingId===pid));
   sel.innerHTML=`<option value="">${isPlanForm()?'タグなし（出発時に選ぶ）':'タグなし'}</option>`+av.map(t=>`<option value="${esc(t.id)}">${esc(t.id)}${t.findName&&t.findName!==t.id?'（'+esc(t.findName)+'）':''}${t.status==='reserved'?'（この予定で予約中）':''}</option>`).join('');
   if(av.some(t=>t.id===cur))sel.value=cur;
   renderTagBtns();
-  $('#tagHint').textContent=tags.length?`利用可能なタグ：${tags.filter(t=>t.status==='available').length}個（全${tags.length}個）`:'タグが未登録です。「タグ管理」で登録すると選べるようになります。';
+  $('#tagHint').textContent=tags.length?`利用可能なタグ：${tags.filter(t=>t.status==='available'&&!t.owner).length}個（全${tags.length}個`+(tags.some(t=>t.owner)?`・うち専用 ${tags.filter(t=>t.owner).length}個`:'')+'）':'タグが未登録です。「タグ管理」で登録すると選べるようになります。';
 }
 function renderPresetChips(){$$('.pchips').forEach(c=>{const l=(c.dataset.preset==='dest'?settings.destPresets:settings.relPresets)||[];c.innerHTML=l.map(t=>`<button type="button" class="nchip" data-memo="${esc(t)}" data-field="${c.dataset.field}">${esc(t)}</button>`).join('');c.hidden=!l.length;});}
 function prepareNewForm(){renderPresetChips();
@@ -2086,7 +2133,7 @@ const COLS=[
  ['行き先',o=>o.dest],['本人携帯',o=>o.selfTel],['家族氏名',o=>o.famName],['家族続柄',o=>o.famRel],['家族携帯',o=>o.famTel],
  ['同行',o=>o.alone?'単独':o.compName],['同行者続柄',o=>o.alone?'':o.compRel],['同行者連絡先',o=>o.alone?'':o.compTel],
  ['服装',o=>o.clothes],['服装写真',o=>o.hasPhoto?'あり':(o.photoDeletedAt?'帰院時に削除':'なし')],
- ['タグ',o=>o.tagId],['タグ回収',o=>o.tagId&&o.status==='returned'?(o.tagReturned?'回収':'未回収'):''],['同意書',o=>o.tagId?(o.consentDate?ymd(o.consentDate):(o.consent?'確認済':'')):''],
+ ['タグ',o=>o.tagId],['タグ回収',o=>o.tagId&&o.status==='returned'?(o.tagKept?'本人が所持（専用）':o.tagReturned?'回収':'未回収'):''],['同意書',o=>o.tagId?(o.consentDate?ymd(o.consentDate):(o.consent?'確認済':'')):''],
  ['出発確認',o=>o.departNurse],['帰院確認',o=>o.returnNurse],['帰院時確認',rcText],['備考',o=>o.note],['最新の経過',o=>lastLog(o)]
 ];
 const WIDE=new Set(['服装','行き先','備考','最新の経過','帰院時確認']);
@@ -2299,9 +2346,9 @@ function renderPatients(){
   const cons=p=>{const c=consentState(p);return (c.st==='ok'?'<span class="lbl lbl-ok">取得 '+ymd(c.date)+'</span> <button class="btn sm" data-ptwd="'+p.id+'">撤回</button>'
     :(c.st==='withdrawn'?'<span class="lbl lbl-overdue">撤回 '+ymd(c.date)+'</span>':'<span class="lbl lbl-returned">未登録</span>')+' <button class="btn sm" data-ptcd="'+p.id+'">取得日を入れる</button>');};
   const ops=p=>dis?`<button class="btn sm" data-ptedit="${p.id}">修正</button> <button class="btn sm pri" data-ptre="${p.id}">再入院</button> <button class="btn sm" data-pthist="${p.id}">過去の記録</button>`
-    :`<button class="btn sm pri" data-ptgo="${p.id}">この患者で登録</button> <button class="btn sm" data-ptedit="${p.id}">修正</button> <button class="btn sm" data-ptdis="${p.id}">退院</button> <button class="btn sm" data-pthist="${p.id}">過去の記録</button>`;
+    :`<button class="btn sm pri" data-ptgo="${p.id}">この患者で登録</button> <button class="btn sm" data-ptit="${p.id}">いつもの外出</button> <button class="btn sm" data-ptedit="${p.id}">修正</button> <button class="btn sm" data-ptdis="${p.id}">退院</button> <button class="btn sm" data-pthist="${p.id}">過去の記録</button>`;
   $('#ptTable').innerHTML=`<thead><tr><th class="nm0">氏名（ふりがな）</th><th>操作</th><th>患者ID</th><th>性別・年齢</th><th>病棟</th>${dis?'<th>退院日</th>':''}<th>同意書</th><th>入院形態</th><th>家族</th><th>家族の連絡先</th><th>本人の携帯</th><th>前回の行き先</th><th>外出回数</th><th>最終外出</th></tr></thead><tbody>`+
-   (list.map(p=>`<tr><td class="nm0"><b>${esc(p.name)}</b>${p.kana?'<br><span class="sub">'+esc(p.kana)+'</span>':''}</td>
+   (list.map(p=>`<tr><td class="nm0"><b>${esc(p.name)}</b>${itOn(p)?` <span class="lbl lbl-ok">いつもの外出${ownedTag(p)?'・'+esc(ownedTag(p).id)+' 専用':''}</span>`:''}${p.kana?'<br><span class="sub">'+esc(p.kana)+'</span>':''}</td>
      <td>${ops(p)}</td>
      <td>${esc(p.pid)}</td><td>${esc(sexAge(p))}</td><td>${esc(wardText(p))}</td>${dis?`<td>${esc(ymd(p.dischargedAt))}</td>`:''}<td>${cons(p)}</td><td>${esc(p.adm||'')}</td>
      <td>${esc([p.famName,p.famRel?'（'+p.famRel+'）':''].filter(Boolean).join(''))}</td><td>${esc(p.famTel||'')}</td><td>${esc(p.selfTel||'')}</td><td>${esc(p.lastDest||'')}</td><td style="text-align:right">${p.count||0}</td><td>${p.lastOutAt?fmt(p.lastOutAt):''}</td></tr>`).join('')
@@ -2480,7 +2527,7 @@ function renderTags(){
   $('#tTable').innerHTML=`<tr><th>タグ番号</th><th>「探す」での名前</th><th>状態</th><th>貸出先</th><th>シリアル</th><th>電池交換日</th><th></th></tr>`+
   (tags.map(t=>{const o=t.outingId&&outings.find(x=>x.id===t.outingId);
     const st=(t.status==='inuse'||t.status==='reserved')?`<b>${TAG_ST[t.status]}</b>`:`<select data-tst="${esc(t.id)}">${['available','missing','maint'].map(k=>`<option value="${k}" ${t.status===k?'selected':''}>${TAG_ST[k]}</option>`).join('')}</select>`;
-    return `<tr><td><b>${esc(t.id)}</b></td><td><input data-tname="${esc(t.id)}" value="${esc(t.findName)}" style="width:150px"></td><td>${st}</td><td>${o?esc(o.name)+(t.status==='reserved'?'（'+fmt(o.departAt)+' 出発予定）':'（'+fmt(o.dueAt)+'まで）'):''}</td><td><input data-tser="${esc(t.id)}" value="${esc(t.serial)}" style="width:150px"></td><td><input type="date" data-tbat="${esc(t.id)}" value="${esc(t.battery)}"></td><td>${(t.status==='inuse'||t.status==='reserved')?'':`<button class="btn sm" data-tdel="${esc(t.id)}">削除</button>`}</td></tr>`;}).join('')||'<tr><td colspan="7">タグが登録されていません</td></tr>');
+    return `<tr><td><b>${esc(t.id)}</b></td><td><input data-tname="${esc(t.id)}" value="${esc(t.findName)}" style="width:150px"></td><td>${st}</td><td>${t.owner?`<span class="own-b">${esc((ownerOf(t)||{}).name||'（台帳にいない人）')}さん 専用</span><br>`:''}${o?esc(o.name)+(t.status==='reserved'?'（'+fmt(o.departAt)+' 出発予定）':'（'+fmt(o.dueAt)+'まで）'):(t.owner&&t.status==='available'?'本人が所持':'')}</td><td><input data-tser="${esc(t.id)}" value="${esc(t.serial)}" style="width:150px"></td><td><input type="date" data-tbat="${esc(t.id)}" value="${esc(t.battery)}"></td><td>${t.owner&&!(t.status==='inuse'||t.status==='reserved')?`<button class="btn sm nw" data-town="${esc(t.id)}">専用をやめる</button> `:''}${(t.status==='inuse'||t.status==='reserved')?'':`<button class="btn sm" data-tdel="${esc(t.id)}">削除</button>`}</td></tr>`;}).join('')||'<tr><td colspan="7">タグが登録されていません</td></tr>');
 }
 async function addTag(id,findName,serial,battery){id=id.trim();if(!id)return false;if(tags.some(t=>t.id===id))return false;const t={id,findName:(findName||id).trim(),serial:serial||'',battery:battery||'',status:'available',outingId:null};tags.push(t);tags.sort(tagSort);await saveTag(t);return true;}
 $('#tAdd').addEventListener('click',async()=>{const pn=$('#tNewId').closest('.panel'),id=$('#tNewId').value.trim();
@@ -2494,7 +2541,10 @@ $('#tTable').addEventListener('change',async e=>{const el=e.target;let t;
   else if(el.dataset.tser){t=tags.find(x=>x.id===el.dataset.tser);t.serial=el.value.trim();}
   else if(el.dataset.tbat){t=tags.find(x=>x.id===el.dataset.tbat);t.battery=el.value;}
   if(t){await saveTag(t);toast('保存しました',1500);}});
-$('#tTable').addEventListener('click',async e=>{const b=e.target.closest('[data-tdel]');if(!b)return;if(!await askConfirm(`タグ ${b.dataset.tdel} を削除しますか？`))return;await dbDel('tags',b.dataset.tdel);tags=tags.filter(t=>t.id!==b.dataset.tdel);renderTags();});
+$('#tTable').addEventListener('click',async e=>{const ow=e.target.closest('[data-town]');if(ow){const t=tags.find(x=>x.id===ow.dataset.town);const p=ownerOf(t);
+    if(!t||!await askConfirm(`タグ ${t.id} を${p?p.name+' さんの':''}専用からやめますか？（ほかの人にも渡せるタグに戻ります。タグを本人から受け取ってください）`))return;
+    t.owner=null;await saveTag(t);if(p){ptLog(p,`専用タグ ${t.id} をやめる（タグ管理）`);await dbPut('patients',p);}renderTags();toast(`タグ ${t.id} を専用からやめました`);return;}
+  const b=e.target.closest('[data-tdel]');if(!b)return;if(!await askConfirm(`タグ ${b.dataset.tdel} を削除しますか？`))return;await dbDel('tags',b.dataset.tdel);tags=tags.filter(t=>t.id!==b.dataset.tdel);renderTags();});
 
 /* ---------- 設定・データ ---------- */
 function renderSettings(){updateSwInfo();renderThemePanel();$('#sDest').value=(settings.destPresets||[]).join('\n');$('#sRel').value=(settings.relPresets||[]).join('\n');$('#sPre').value=settings.preMin;$('#sRe').value=settings.realertMin;$('#sVol').value=settings.volume;updateVolWarn();$('#sEsc').value=settings.escalateMin;$('#sIdle').value=settings.idleMin;$('#sBk').value=settings.backupHour;$('#sQf').value=settings.quietFrom;$('#sQt').value=settings.quietTo;$('#sPh').value=(settings.printHours||[]).join(',');$('#sMask').checked=!!settings.mask;renderNurseMgr();
@@ -2584,7 +2634,7 @@ async function demoPlans(list,{now,stf,famOf}){const M=60000,H=3600000,D=8640000
     const o={id:uid(),name:p.name,pid:p.pid,kana:p.kana,sex:p.sex,age:p.age,ward:p.ward,adm:p.adm,kind,departAt:dep,dueAt:due,dueAtOriginal:due,dest,alone:!comp,
       compName:comp?comp.name:'',compRel:comp?rel:'',compTel:comp?comp.tel:'',...famOf(p),clothes:ph||i%2?cl[0]:'',note:'',tagId:'',consent:false,departNurse:stf(),status:'planned',createdAt:now,hasPhoto:ph,demo:true,log:[]};
     if(RSV.includes(i)){const tid='T-'+pad(10+RSV.indexOf(i));if(await addTag(tid)){const nt=tags.find(x=>x.id===tid);nt.demo=true;await saveTag(nt);}
-      const t=tags.find(x=>x.id===tid&&x.status==='available');
+      const t=tags.find(x=>x.id===tid&&x.status==='available'&&!x.owner);
       if(t){if(!p.consentDate){p.consentDate=toDateInput(now-30*D);p.consentLog=[...(p.consentLog||[]),{at:now-30*D,text:'同意書取得日を '+ymd(p.consentDate)+' に登録',by:stf()}];}
         o.tagId=t.id;o.consent=true;o.consentDate=p.consentDate;t.status='reserved';t.outingId=o.id;await saveTag(t);}}
     addLog(o,`${kind}の予定を登録（出発予定 ${fmt(dep)}）`+(o.tagId?`（タグ ${o.tagId} を予約）`:''),o.departNurse);if(ph)addLog(o,'服装写真を登録',o.departNurse);
@@ -2644,7 +2694,7 @@ $('#demoIn').addEventListener('click',async()=>{
   const demo=[{pt:P(0),kind:'外出',departAt:now-150*M,dueAt:now-18*M,dest:'〇〇駅周辺で買い物',alone:true,clothes:'紺のダウン、灰色のズボン、白いスニーカー'},
     {pt:P(1),kind:'外出',departAt:now-110*M,dueAt:now+9*M,dest:'自宅',alone:false,comp:true,clothes:'ベージュのコート、黒いバッグ'},
     {pt:P(2),kind:'外泊',departAt:now-20*H,dueAt:now+26*H,dest:'実家（明石市）',alone:false,comp:true,clothes:'緑のパーカー、ジーンズ'}];
-  for(const d of demo){const p=d.pt;p.consentDate=p.consentDate||toDateInput(now-40*D);const t=tags.find(x=>x.status==='available');
+  for(const d of demo){const p=d.pt;p.consentDate=p.consentDate||toDateInput(now-40*D);const t=tags.find(x=>x.status==='available'&&!x.owner);
     const o={id:uid(),name:p.name,pid:p.pid,kana:p.kana,sex:p.sex,age:p.age,ward:p.ward,adm:p.adm,kind:d.kind,departAt:d.departAt,dueAt:d.dueAt,dueAtOriginal:d.dueAt,dest:d.dest,alone:!d.comp,
       compName:d.comp?p.famName:'',compRel:d.comp?p.famRel:'',compTel:d.comp?p.famTel:'',...famOf(p),clothes:d.clothes,note:'',tagId:t?t.id:'',consent:!!t,consentDate:t?p.consentDate:'',departNurse:stf(),status:'out',createdAt:now,hasPhoto:false,demo:true,log:[]};
     addLog(o,`${o.kind}に出発（デモ）`+(t?`（タグ ${t.id} 貸出）`:''),stf());o.patientId=(await upsertPatient(o,null)).id;if(t){t.status='inuse';t.outingId=o.id;await saveTag(t);}await saveOuting(o);outings.push(o);}
@@ -2660,7 +2710,7 @@ $('#demoIn').addEventListener('click',async()=>{
     list.push(p);await dbPut('patients',p);patients.push(p);
     // タグは T-06〜T-09 を足して貸し出す（T-04・T-05 は練習の新規登録・予定の出発用に空けておく）。もとから無かったタグだけ「デモ」の印をつけ、デモを消す時に消す
     const tid='T-'+pad(6+i);if(await addTag(tid)){const nt=tags.find(x=>x.id===tid);nt.demo=true;await saveTag(nt);}
-    const t=tags.find(x=>x.id===tid&&x.status==='available')||tags.find(x=>x.status==='available');
+    const t=tags.find(x=>x.id===tid&&x.status==='available'&&!x.owner)||tags.find(x=>x.status==='available'&&!x.owner);
     const o={id:uid(),name:p.name,pid:p.pid,kana:p.kana,sex:p.sex,age:p.age,ward:p.ward,adm:p.adm,kind:b.kind,departAt:b.departAt,dueAt:b.dueAt,dueAtOriginal:b.dueAt,dest:b.dest,alone:false,
       compName:b.comp,compRel:b.rel,compTel:tel,...famOf(p),clothes:b.clothes,note:'',tagId:t?t.id:'',consent:!!t,consentDate:t?p.consentDate:'',departNurse:stf(),status:'out',createdAt:now,hasPhoto:true,demo:true,log:[]};
     addLog(o,`${o.kind}に出発（デモ）`+(t?`（タグ ${t.id} 貸出）`:''),stf());addLog(o,'服装写真を登録',stf());
@@ -2669,17 +2719,240 @@ $('#demoIn').addEventListener('click',async()=>{
    const o={id:uid(),name:p.name,pid:p.pid,kana:p.kana,sex:p.sex,age:p.age,ward:p.ward,adm:p.adm,kind:'外泊',departAt:dep,dueAt:dep+26*H,dueAtOriginal:dep+26*H,dest:'自宅（明石市）',alone:false,compName:p.famName,compRel:p.famRel,compTel:p.famTel,...famOf(p),clothes:'',note:'',tagId:'',consent:false,departNurse:stf(),status:'planned',createdAt:now,hasPhoto:false,demo:true,log:[]};
    addLog(o,`外泊の予定を登録（出発予定 ${fmt(dep)}）`,stf());o.patientId=(await upsertPatient(o,null)).id;await saveOuting(o);outings.push(o);}
   const nPlan=await demoPlans(list,{now,stf,pick,rnd,famOf});const nHist=await demoHistory(list,{now,stf});
+  const nIt=await demoItsumo(list,{now,D});
   for(const p of list)await dbPut('patients',p);
   const nOut=outings.filter(o=>o.demo&&isActive(o)).length;
-  lastSig='';showTab('active');tick();toast(`デモデータを入れました（東1病棟の入院患者${list.length}人・外出・外泊中${nOut}人・予定${nPlan+1}件・帰院済みの記録${nHist}件・架空の職員${addN.length}人）`,6000);});
+  lastSig='';showTab('active');tick();toast(`デモデータを入れました（東1病棟の入院患者${list.length}人・外出・外泊中${nOut}人・予定${nPlan+1}件・帰院済みの記録${nHist}件・いつもの外出${nIt}人・架空の職員${addN.length}人）`,6000);});
 $('#demoOut').addEventListener('click',async()=>{for(const o of outings.filter(x=>x.demo)){await dbDel('outings',o.id);await dbDel('photos',o.id);dropPhotoURL(o.id);const t=tags.find(x=>x.outingId===o.id);if(t){t.status='available';t.outingId=null;await saveTag(t);}}
-  for(const p of patients.filter(x=>x.demo))await dbDel('patients',p.id);patients=patients.filter(x=>!x.demo);
+  // 0.2.0：デモの人の撮っておいた写真と、デモの人の専用タグの印も消す
+  for(const p of patients.filter(x=>x.demo)){await dbDel('photos',prepKey(p.id));dropPhotoURL(prepKey(p.id));prepSet.delete(p.id);}
+  for(const t of tags.filter(x=>x.owner&&patients.some(p=>p.demo&&p.id===x.owner))){t.owner=null;await saveTag(t);}
+  for(const p of patients.filter(x=>x.demo))await dbDel('patients',p.id);patients=patients.filter(x=>!x.demo);itSig='';
   // デモで足したタグ（T-06〜T-09。もとから無かった時だけ足している）も消す
   for(const t of tags.filter(x=>x.demo&&x.status==='available'))await dbDel('tags',t.id);tags=tags.filter(x=>!(x.demo&&x.status==='available'));
   outings=outings.filter(x=>!x.demo);planOpen.clear();
   // 2.4.0：デモで足した職員名だけを消す（利用者が登録した看護師名と、その順番はそのまま）
   {const dn=settings.demoNurses||[];if(dn.length){settings.nurses=settings.nurses.filter(n=>!dn.includes(n));}delete settings.demoNurses;await saveSettings();renderNurseList();renderNurseMgr();attachNurseChips(nf);}
   lastSig='';tick();if($('#sec-plan').classList.contains('active'))renderPlans();toast('デモデータを消しました');});
+
+/* ---------- 0.2.0 いつもの外出（短時間・くり返しの外出を名前のボタンで） ---------- */
+// 患者台帳に「いつもの外出」（行き先・帰院予定の決め方・専用タグ）を覚えさせ、当日は名前の「出発」を押して服装を確かめ、看護師名を選んで出発する。
+// 服装の写真は混む前に撮っておける（photos ストアに 'prep:患者の台帳id' で置く）。出発でその外出の写真に移し、帰院で消える（これまでと同じ）。
+// 使わなかった写真は日付が変わったら（0時）消す。専用タグは患者がずっと持つ（tags の owner に患者の台帳id）。帰院で回収しない。
+const IT_DEF={dest:'喫煙',dueMode:'fixed',dueHM:'11:45',duePlus:45};
+const IT_FIXED_MAX=120;     // 決まった時刻を帰院予定に使うのは、それが今から5分〜120分先の時だけ（それ以外は +duePlus 分）
+const IT_PLUS=[30,45,60,90];
+const prepKey=id=>'prep:'+id;
+let prepSet=new Set(),prepDay='',itPrepMode=false,itPhotoFor=null,itSig='',itTok=0;
+const itOn=p=>!!(p&&p.itsumo&&p.itsumo.on&&!isDis(p));
+const itConf=p=>({...IT_DEF,...((p&&p.itsumo)||{})});
+const itList=()=>patients.filter(itOn).sort((a,b)=>String(a.ward||'').localeCompare(String(b.ward||''),'ja')||String(a.kana||a.name).localeCompare(String(b.kana||b.name),'ja'));
+const ownedTag=p=>p?tags.find(t=>t.owner===p.id):null;
+const ownerOf=t=>t&&t.owner?patients.find(p=>p.id===t.owner):null;
+const tagFree=(t,pt)=>!t.owner||(pt&&t.owner===pt.id);   // 専用タグは、その人の登録の時だけ選べる
+const hasPrep=p=>!!(p&&prepSet.has(p.id)&&p.itsumoPhotoAt&&toDateInput(p.itsumoPhotoAt)===toDateInput(Date.now()));
+const itActive=p=>outings.find(o=>isActive(o)&&(o.patientId===p.id||(p.pid&&o.pid===p.pid)));
+const itTodayBack=p=>{const t=toDateInput(Date.now());return outings.filter(o=>o.status==='returned'&&(o.patientId===p.id||(p.pid&&o.pid===p.pid))&&toDateInput(o.returnedAt)===t).sort((a,b)=>b.returnedAt-a.returnedAt);};
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes());};
+// 帰院予定の候補（いちばん目が初めから選ばれている）
+// 並びは「決まった時刻」→ +30・+45・+60・+90分。初めに選ぶのは、決まった時刻が使える時はそれ、ほかは +duePlus 分（def:true）
+function itDueOpts(p,now){const c=itConf(p),M=60000,out=[];
+  const fx=c.dueHM&&tkAtHM(now,c.dueHM);const fxOk=!!fx&&fx-now>=5*M&&fx-now<=IT_FIXED_MAX*M;
+  if(fxOk)out.push({at:fx,label:`${c.dueHM}（決まった時刻）`,def:c.dueMode==='fixed'});
+  const plus=[...new Set([...IT_PLUS,+c.duePlus])].sort((a,b)=>a-b);
+  for(const m of plus){const at=Math.ceil((now+m*M)/M)*M;out.push({at,label:`+${m}分（${hm(at)}）`,def:false});}
+  if(!out.some(x=>x.def)){const i=out.findIndex(x=>x.label.startsWith(`+${c.duePlus}分`));out[i<0?0:i].def=true;}
+  return out;}
+function itDueText(p,now){const c=itConf(p);now=now||Date.now();const fx=c.dueHM&&tkAtHM(now,c.dueHM);
+  return c.dueMode==='fixed'&&fx&&fx-now>=5*60000&&fx-now<=IT_FIXED_MAX*60000?`${c.dueHM}まで`:`+${c.duePlus}分`;}
+
+// 撮っておいた写真の見直し（起動時・日付が変わった時・復元の後）。今日の写真で、台帳にいる人の分だけ残す
+async function purgePrep(){
+  const today=toDateInput(Date.now());const keys=await dbKeys('photos');const keep=new Set();
+  for(const k of keys){if(typeof k!=='string'||!k.startsWith('prep:'))continue;const id=k.slice(5);const p=patients.find(x=>x.id===id);
+    if(p&&!isDis(p)&&p.itsumoPhotoAt&&toDateInput(p.itsumoPhotoAt)===today)keep.add(id);else{await dbDel('photos',k);dropPhotoURL(k);}}
+  for(const p of patients){if(p.itsumoPhotoAt&&!keep.has(p.id)){p.itsumoPhotoAt=null;await dbPut('patients',p);}}
+  prepSet=keep;prepDay=today;itSig='';
+}
+async function dropPrep(p){await dbDel('photos',prepKey(p.id));dropPhotoURL(prepKey(p.id));prepSet.delete(p.id);if(p.itsumoPhotoAt){p.itsumoPhotoAt=null;await dbPut('patients',p);}}
+
+/* 画面 */
+function itTileHTML(p,now){
+  const o=itActive(p),c=itConf(p),t=ownedTag(p);let cls='',st='';
+  const tagHtml=t?`<span class="it-tag">${esc(t.id)} 専用</span>`:'<span class="it-tag none">タグなし</span>';
+  const phKey=o&&o.hasPhoto?o.id:(hasPrep(p)?prepKey(p.id):'');
+  const ph=phKey?`<div class="it-ph"><img data-itph="${esc(phKey)}" alt="服装写真"></div>`:'<div class="it-noph">写真<br>まだ</div>';
+  if(itPrepMode){
+    if(hasPrep(p))st=`<span class="it-okt">✓ 写真 ${hm(p.itsumoPhotoAt)}</span><button type="button" class="btn it-b" data-itsnap="${p.id}">撮り直す</button>`;
+    else if(o)st=`<span class="it-sub">外出中</span><span></span>`;
+    else st=`<span class="it-warnt">写真まだ</span><button type="button" class="btn pri it-b" data-itsnap="${p.id}">📷 撮る</button>`;
+  }else if(o){const s=stateOf(o,now);
+    if(s==='overdue'||s==='search'){cls='over';st=`<span class="it-badt">⚠ ${s==='search'?'捜索中':dur(now-o.dueAt)+'過ぎ'}</span><button type="button" class="btn ok it-b" data-itback="${o.id}">帰院</button>`;}
+    else{cls='out';st=`<span class="it-outt">${hm(o.dueAt)}まで あと${Math.max(0,Math.ceil((o.dueAt-now)/60000))}分</span><button type="button" class="btn ok it-b" data-itback="${o.id}">帰院</button>`;}
+  }else{const b=itTodayBack(p)[0];
+    st=`<span class="${hasPrep(p)?'it-sub':'it-warnt'}">${hasPrep(p)?'写真 '+hm(p.itsumoPhotoAt):'写真まだ'}${b?`<small>（今日 ${hm(b.returnedAt)} 帰院）</small>`:''}</span><button type="button" class="btn pri it-b" data-itgo="${p.id}">出発</button>`;}
+  return `<div class="it-t ${cls}" data-itp="${p.id}">${ph}<div class="it-hd"><div class="it-nm">${esc(p.name)}</div><div class="it-meta">${tagHtml}${esc(wardText(p))}</div><div class="it-meta">${esc(c.dest)}・${esc(itDueText(p,now))}</div></div><div class="it-st">${st}</div></div>`;
+}
+function itSigOf(now){const m=Math.floor(now/60000);return itPrepMode+'#'+m+'#'+itList().map(p=>{const o=itActive(p);return p.id+':'+(o?o.id+stateOf(o,now)+(o.hasPhoto?1:0):'-')+':'+(hasPrep(p)?p.itsumoPhotoAt:0)+':'+(ownedTag(p)||{}).id+':'+itTodayBack(p).length+':'+JSON.stringify(p.itsumo);}).join('|');}
+async function renderItsumo(force){
+  const now=Date.now(),sig=itSigOf(now);$('#cntItsumo').textContent=itList().length;
+  if(!force&&sig===itSig)return;itSig=sig;
+  const list=itList();const outN=list.filter(p=>itActive(p)).length,overN=list.filter(p=>{const o=itActive(p);return o&&['overdue','search'].includes(stateOf(o,now));}).length;
+  const prepN=list.filter(hasPrep).length;
+  $('#itTitle').textContent=itPrepMode?'📷 写真の準備':'いつもの外出';
+  $('#itHelp').textContent=itPrepMode?'混む前に一人ずつ撮っておきます。出発の時に看護師が服装を見比べます。写真は帰院で消え、使わなかった写真も0時に消えます。'
+    :'「出発」を押し、服装が写真と同じか確かめて出発します。戻ったら「帰院」を押します。';
+  $('#itPrepBtn').textContent=itPrepMode?'準備を終える':'📷 写真の準備';$('#itPrepBtn').classList.toggle('pri',itPrepMode);$('#itMembers').hidden=itPrepMode;
+  $('#itSum').innerHTML=itPrepMode?`<span class="g">写真あり ${prepN}人</span><span class="o">写真まだ ${list.length-prepN-list.filter(p=>!hasPrep(p)&&itActive(p)).length}人</span>`
+    :`<span>出発前 ${list.length-outN}人</span><span class="o">外出中 ${outN-overN}人</span>${overN?`<span class="r">帰院予定を過ぎ ${overN}人</span>`:''}<span>写真の準備 ${prepN}／${list.length}人</span>`;
+  $('#itGrid').innerHTML=list.map(p=>itTileHTML(p,now)).join('')||'<div class="empty">「いつもの外出」の人がまだいません。「人を足す・外す」から選んでください。</div>';
+  const tok=++itTok;   // 写真を読む間に新しく作り直したら、古い方は手を止める
+  for(const img of $$('#itGrid img[data-itph]')){const u=await getPhotoURL(img.dataset.itph);if(tok!==itTok)return;if(u)img.src=u;else{const w=img.closest('.it-ph');if(w)w.outerHTML='<div class="it-noph">写真<br>まだ</div>';}}
+}
+$('#itPrepBtn').addEventListener('click',()=>{itPrepMode=!itPrepMode;renderItsumo(true);});
+$('#itMembers').addEventListener('click',()=>dlgItPick());
+$('#itGrid').addEventListener('click',e=>{const g=e.target.closest('[data-itgo]'),b=e.target.closest('[data-itback]'),s=e.target.closest('[data-itsnap]');
+  if(g)dlgItGo(patients.find(p=>p.id===g.dataset.itgo));
+  else if(b){const o=outings.find(x=>x.id===b.dataset.itback);if(o)dlgItBack(o);}
+  else if(s){itPhotoFor=s.dataset.itsnap;$('#itPhotoIn').click();}
+  else{const ph=e.target.closest('.it-ph img');if(ph&&ph.src)openDlg('服装写真',`<img src="${ph.src}" style="width:100%;border-radius:8px" alt="服装写真"><p class="hint">帰院で消えます。使わなかった写真も0時に消えます。</p>`,[{label:'閉じる'}]);}});
+$('#itPhotoIn').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';const p=patients.find(x=>x.id===itPhotoFor);itPhotoFor=null;if(!f||!p)return;
+  try{const b=await compress(f);await dbPut('photos',b,prepKey(p.id));dropPhotoURL(prepKey(p.id));p.itsumoPhotoAt=Date.now();await dbPut('patients',p);prepSet.add(p.id);prepDay=toDateInput(Date.now());
+    renderItsumo(true);toast(`${p.name} さんの服装写真を撮りました（0時に消えます）`,2500);}catch(err){toast('写真を読み込めませんでした');}});
+
+/* 出発 */
+function dlgItGo(p){
+  if(!p)return;const now=Date.now();
+  if(itActive(p)){toast(`${p.name} さんはすでに外出・外泊中です`);return;}
+  const c=itConf(p),t=ownedTag(p),cs=consentState(p),opts=itDueOpts(p,now);let shot=null,shotURL=null;
+  const pre=hasPrep(p);
+  const tagLine=t?`<span class="it-tag">${esc(t.id)} 専用</span>（本人が持っています。渡す・回収はありません）`:'<span class="it-tag none">タグなし</span>';
+  openDlg(`${p.name}　の出発`,`
+    <div class="it-dsub">${esc(wardText(p))}・${tagLine}</div>
+    <div class="it-drow"><div class="it-dph" id="itGoPh">${pre?'<img alt="服装写真">':'<div class="it-noph big">写真<br>まだ</div>'}</div>
+      <div><div class="it-q" id="itGoQ">${pre?`今の服装は、この写真（${hm(p.itsumoPhotoAt)}）と<span class="nw">同じですか</span>`:'撮っておいた写真がありません。<span class="nw">今、撮ってください。</span>'}</div>
+        <label class="btn it-cam">${pre?'服装がちがう（撮り直す）':'📷 撮る'}<input type="file" accept="image/*" capture="environment" id="itGoIn" hidden></label>
+        <div class="it-kv"><b>行き先</b><span>${esc(c.dest)}（同行なし）</span><b>出発</b><span>${hm(now)}（今）</span></div></div></div>
+    <div class="it-lbl">帰院予定</div><div class="seg it-due">${opts.map(x=>`<button type="button" class="btn${x.def?' on':''}" data-itdue="${x.at}">${esc(x.label)}</button>`).join('')}</div>
+    <input type="hidden" name="due" value="${opts.find(x=>x.def).at}">
+    <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
+    ${t&&cs.st!=='ok'?`<p class="warnbox">${cs.st==='withdrawn'?`この人は ${ymd(cs.date)} に同意を撤回しています。患者台帳の「いつもの外出」で専用タグを外してください。`:'同意書の取得日が患者台帳にありません。専用タグを持たせるには、患者台帳で「取得日を入れる」を先にしてください。'}</p>`:''}`,
+  [{label:'やめる'},{label:'出発',cls:'ok big',onClick:async f=>{
+    const nurse=val(f,'nurse'),due=+val(f,'due'),at=Date.now();const E=[];
+    if(!nurse)E.push(['nurse','確認した看護師を選んでください']);
+    if(!(due>at))E.push([null,'帰院予定が過ぎています。帰院予定のボタンを選び直してください']);
+    if(t&&cs.st!=='ok')E.push([null,cs.st==='withdrawn'?'同意を撤回しているため、専用タグを持たせて出発できません（患者台帳で専用タグを外してください）':'同意書の取得日が患者台帳にないため出発できません（患者台帳で取得日を入れてください）']);
+    if(itActive(p))E.push([null,`${p.name} さんはすでに外出・外泊中です`]);
+    if(t&&!(t.status==='available'))E.push([null,`専用タグ ${t.id} は今「${TAG_ST[t.status]||t.status}」です。タグ管理で確かめてください`]);
+    if(E.length)return fieldErrs(f,E);
+    let blob=shot;if(!blob&&pre)blob=await dbGet('photos',prepKey(p.id));
+    const o={id:uid(),name:p.name,pid:p.pid||'',kana:p.kana||'',sex:p.sex||'',age:ageOf(p)||'',ward:p.ward||'',adm:p.adm||'',kind:'外出',departAt:at,dueAt:due,dueAtOriginal:due,
+      dest:c.dest,selfTel:p.selfTel||'',famName:p.famName||'',famRel:p.famRel||'',famTel:p.famTel||'',alone:true,compName:'',compRel:'',compTel:'',clothes:'',
+      tagId:t?t.id:'',consent:!!t,consentDate:t?cs.date:'',departNurse:nurse,note:'いつもの外出',status:'out',createdAt:at,hasPhoto:!!blob,itsumo:true,tagOwned:!!t,log:[]};
+    if(p.demo)o.demo=true;
+    addLog(o,'外出に出発（いつもの外出）'+(t?`（専用タグ ${t.id}・同意書 ${ymd(o.consentDate)} 取得）`:'（タグなし）'),nurse);
+    if(blob)addLog(o,shot?'服装写真を登録（出発時に撮影）':`服装写真を確認（${hm(p.itsumoPhotoAt)} に撮影したもの）`,nurse);
+    o.patientId=(await upsertPatient(o,p.id)).id;
+    await saveOuting(o);if(blob)await dbPut('photos',blob,o.id);
+    await dropPrep(p);
+    if(t){t.status='inuse';t.outingId=o.id;await saveTag(t);}
+    outings.push(o);settings.itsumoNurse=nurse;rememberNurse(nurse);if(shotURL)URL.revokeObjectURL(shotURL);
+    lastSig='';itSig='';await tick();toast(`${p.name} さんが出発しました（帰院予定 ${hm(due)}）`);
+  }}]);
+  const goBtn=$('#dlgActions').lastElementChild;const label=()=>{goBtn.textContent=(shot||pre?'服装は同じ。出発':'写真なしで出発')+`（${hm(Date.now())}）`;};label();
+  if(pre)getPhotoURL(prepKey(p.id)).then(u=>{const im=$('#itGoPh img');if(im&&u)im.src=u;});
+  $('#dlgBody').querySelector('.it-due').addEventListener('click',e=>{const b=e.target.closest('[data-itdue]');if(!b)return;$$('#dlgBody [data-itdue]').forEach(x=>x.classList.toggle('on',x===b));$('#dlgForm').elements.due.value=b.dataset.itdue;});
+  $('#itGoIn').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+    try{shot=await compress(f);if(shotURL)URL.revokeObjectURL(shotURL);shotURL=URL.createObjectURL(shot);$('#itGoPh').innerHTML=`<img src="${shotURL}" alt="服装写真">`;
+      $('#itGoQ').textContent='今、撮った写真で出発します。';e.target.closest('label').firstChild.textContent='撮り直す';label();}catch(err){toast('写真を読み込めませんでした');}});
+}
+
+/* 帰院（看護師名を選ぶ） */
+function dlgItBack(o){
+  const t=o.tagId&&tags.find(x=>x.id===o.tagId),own=!!(t&&t.owner&&t.owner===o.patientId);
+  openDlg(`${o.name}　の帰院`,`
+    <div class="it-kv"><b>出発</b><span>${hm(o.departAt)}（${esc(o.dest||'')}）</span><b>帰院予定</b><span>${hm(o.dueAt)}</span><b>帰院</b><span>${hm(Date.now())}（今）</span></div>
+    <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
+    ${o.tagId?(own?`<p class="hint">専用タグ <b>${esc(o.tagId)}</b> は本人が持ったままにします（回収しません）。</p>`:`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`):''}
+    ${o.hasPhoto?'<p class="warnbox">帰院を登録すると服装写真は消えます（元に戻せません）。</p>':''}
+    <p style="margin:6px 0 0"><button type="button" class="linkbtn" id="itBackMore">帰院時の確認（持ち物・様子など）も書く</button></p>`,
+  [{label:'やめる'},{label:'帰院',cls:'ok big',onClick:async f=>{
+    const nurse=val(f,'nurse');if(!nurse)return fieldErrs(f,[['nurse','確認した看護師を選んでください']]);
+    const at=Date.now();o.status='returned';o.returnedAt=at;o.returnNurse=nurse;addLog(o,'帰院（いつもの外出）',nurse);rememberNurse(nurse);settings.itsumoNurse=nurse;saveSettings();
+    if(o.hasPhoto){await dbDel('photos',o.id);dropPhotoURL(o.id);o.hasPhoto=false;o.photoDeletedAt=Date.now();addLog(o,'服装写真を削除（自動）');}
+    if(o.tagId)await itTagOnReturn(o,own?true:!!f.elements.tagBack?.checked,nurse);
+    await saveOuting(o);lastSig='';itSig='';await tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':''));
+  }}]);
+  $('#dlgActions').lastElementChild.textContent=`帰院（${hm(Date.now())}）`;
+  $('#itBackMore').addEventListener('click',()=>dlgReturn(o));
+}
+// 帰院の時のタグ：専用タグは本人が持ったまま（貸出中を解き、回収の扱いにしない）。それ以外は回収したかどうか
+async function itTagOnReturn(o,back,nurse){const t=tags.find(x=>x.id===o.tagId);const own=!!(t&&t.owner&&t.owner===o.patientId);
+  if(t){t.outingId=null;t.status=own||back?'available':'missing';await saveTag(t);}
+  if(own){o.tagKept=true;addLog(o,`専用タグ ${o.tagId} は本人が持ったまま`,nurse);}
+  else{addLog(o,back?`タグ ${o.tagId} 回収`:`タグ ${o.tagId} 未回収`,nurse);o.tagReturned=!!back;}}
+
+/* 人を足す・外す（台帳から選ぶ） */
+function dlgItPick(){
+  openDlg('「いつもの外出」の人を足す・外す',`<p class="hint" style="margin-top:0">名前の「設定」で、行き先・帰院予定・専用タグを決めます。患者台帳にいる入院中の人から選びます。</p>
+    <input id="itQ" placeholder="氏名・ふりがな・IDで絞り込み" style="width:100%"><div id="itPickList" class="it-pick"></div>`,[{label:'閉じる'}]);
+  const draw=()=>{const q=$('#itQ').value.trim();const l=patients.filter(p=>!isDis(p)&&matchQ(p,q)).sort((a,b)=>(itOn(b)-itOn(a))||String(a.kana||a.name).localeCompare(String(b.kana||b.name),'ja')).slice(0,40);
+    $('#itPickList').innerHTML=l.map(p=>`<div class="it-prow"><b>${esc(p.name)}</b><span class="it-sub">${esc(wardText(p))}${p.pid?'・ID '+esc(p.pid):''}</span>${itOn(p)?`<span class="lbl lbl-ok">いつもの外出</span>`:''}<span class="sp"></span><button type="button" class="btn sm${itOn(p)?'':' pri'}" data-itset="${p.id}">${itOn(p)?'設定':'足す'}</button></div>`).join('')||'<p class="hint">該当する人がいません（患者台帳に入院中の人がいないか、絞り込みに合う人がいません）</p>';};
+  $('#itQ').addEventListener('input',draw);draw();
+  $('#itPickList').addEventListener('click',e=>{const b=e.target.closest('[data-itset]');if(b)dlgItSet(patients.find(p=>p.id===b.dataset.itset));});
+}
+/* その人の「いつもの外出」の設定 */
+function dlgItSet(p){
+  if(!p)return;const c=itConf(p),cur=ownedTag(p),act=itActive(p);
+  const cand=tags.filter(t=>t.owner===p.id||(!t.owner&&t.status==='available'));
+  const dests=[...new Set(['喫煙',...(settings.destPresets||[])])];
+  openDlg(`${p.name}　の「いつもの外出」`,`
+    <div class="it-lbl">いつもの外出の人にする</div><div class="seg"><label class="btn${(p.itsumo?c.on!==false:true)?' on':''}"><input type="radio" name="itOn" value="1"${(p.itsumo?c.on!==false:true)?' checked':''} hidden>する</label><label class="btn${p.itsumo&&c.on===false?' on':''}"><input type="radio" name="itOn" value="0"${p.itsumo&&c.on===false?' checked':''} hidden>しない（外す）</label></div>
+    <label>行き先<input name="itDest" value="${esc(c.dest)}"></label><div class="nchips mchips">${dests.slice(0,10).map(t=>`<button type="button" class="nchip" data-memo="${esc(t)}" data-field="itDest">${esc(t)}</button>`).join('')}</div>
+    <p class="hint" style="margin:2px 0 6px">同行はなし（単独）として登録します。</p>
+    <div class="it-lbl">帰院予定</div>
+    <div class="seg"><label class="btn${c.dueMode==='fixed'?' on':''}"><input type="radio" name="itMode" value="fixed"${c.dueMode==='fixed'?' checked':''} hidden>決まった時刻</label><label class="btn${c.dueMode!=='fixed'?' on':''}"><input type="radio" name="itMode" value="plus"${c.dueMode!=='fixed'?' checked':''} hidden>出発から○分</label></div>
+    <div class="grid" style="margin-top:6px"><label>決まった時刻<input type="time" name="itHM" value="${esc(c.dueHM)}"></label>
+      <label>出発から<select name="itPlus">${IT_PLUS.map(m=>`<option value="${m}"${m===+c.duePlus?' selected':''}>${m}分</option>`).join('')}</select></label></div>
+    <p class="hint" style="margin:2px 0 6px">決まった時刻が過ぎている時や、2時間より先の時は「出発から○分」を使います（出発の画面で選び直せます）。</p>
+    <div class="it-lbl">専用タグ（ずっと持たせるタグ）</div>
+    <select name="itTag"${act?' disabled':''}><option value="">専用タグなし（その都度渡す・渡さない）</option>${cand.map(t=>`<option value="${esc(t.id)}"${cur&&cur.id===t.id?' selected':''}>${esc(t.id)}${t.findName&&t.findName!==t.id?'（'+esc(t.findName)+'）':''}</option>`).join('')}</select>
+    ${act?'<p class="hint">外出中のため、専用タグは帰院の後で変えられます。</p>':''}
+    <p class="hint">専用タグは、ほかの人の登録では選べなくなり、帰院の時も回収しません。同意書の取得日が台帳にある人だけに持たせられます。</p>`,
+  [{label:'やめる'},{label:'保存',cls:'pri',onClick:async f=>{
+    const on=f.elements.itOn.value!=='0',dest=val(f,'itDest'),mode=f.elements.itMode.value||'fixed',HM=val(f,'itHM'),plus=+val(f,'itPlus')||45,tid=act?(cur?cur.id:''):val(f,'itTag');
+    const E=[],cs=consentState(p);
+    if(on&&!dest)E.push(['itDest','行き先を入れてください']);
+    if(on&&mode==='fixed'&&!/^\d{2}:\d{2}$/.test(HM))E.push(['itHM','決まった時刻を入れてください']);
+    if(on&&tid&&cs.st==='withdrawn')E.push(['itTag',`この人は ${ymd(cs.date)} に同意を撤回しています。専用タグは持たせられません`]);
+    else if(on&&tid&&cs.st!=='ok')E.push(['itTag','同意書の取得日が台帳にありません。患者台帳の「取得日を入れる」を先にしてください']);
+    if(E.length)return fieldErrs(f,E);
+    p.itsumo={on,dest:dest||IT_DEF.dest,dueMode:mode,dueHM:HM||IT_DEF.dueHM,duePlus:plus};
+    const newTid=on?tid:(act&&cur?cur.id:'');
+    if(cur&&cur.id!==newTid){cur.owner=null;await saveTag(cur);}
+    if(newTid&&(!cur||cur.id!==newTid)){const t=tags.find(x=>x.id===newTid);if(t){t.owner=p.id;await saveTag(t);}}
+    ptLog(p,on?`いつもの外出：${p.itsumo.dest}・${mode==='fixed'?HM+'まで':'+'+plus+'分'}・${newTid?'専用タグ '+newTid:'専用タグなし'}`:'いつもの外出から外す'+(cur&&cur.id!==newTid?`（専用タグ ${cur.id} を外す）`:''));
+    await dbPut('patients',p);if(!on)await dropPrep(p);
+    itSig='';renderItsumo(true);if($('#sec-patients').classList.contains('active'))renderPatients();if($('#sec-tags').classList.contains('active'))renderTags();
+    toast(on?`${p.name} さんを「いつもの外出」にしました`:`${p.name} さんを「いつもの外出」から外しました`);
+  }}]);
+  // ラジオの見た目（.seg の on）
+  $$('#dlgBody .seg').forEach(sg=>sg.addEventListener('change',()=>sg.querySelectorAll('label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked))));
+}
+$('#ptTable').addEventListener('click',e=>{const b=e.target.closest('[data-ptit]');if(b)dlgItSet(patients.find(p=>p.id===b.dataset.ptit));});
+
+// 0.2.0：デモの「いつもの外出」の人12人（台帳の21〜32人目）。専用タグは T-11 から順に空いている番号（もとから無い時だけ足して「デモ」の印）。9人は服装の写真を撮っておいた状態
+async function demoItsumo(list,{now,D}){let n=0,num=11;
+  for(let k=0;k<12;k++){const p=list[20+k];if(!p||itActive(p))continue;
+    p.consentDate=p.consentDate||toDateInput(now-30*D);if(!(p.consentLog||[]).length)p.consentLog=[{at:now-30*D,text:'同意書取得日を '+ymd(p.consentDate)+' に登録',by:''}];
+    p.itsumo={on:true,dest:'喫煙',dueMode:'fixed',dueHM:'11:45',duePlus:45};
+    // T-11 から順に、無い番号は足し（「デモ」の印）、あっても空いていればそれを使う（予定で予約中などのタグは飛ばす）
+    let t=null;while(!t&&num<100){const tid='T-'+pad(num++);const ex=tags.find(x=>x.id===tid);
+      if(!ex){if(await addTag(tid)){t=tags.find(x=>x.id===tid);t.demo=true;}}else if(ex.status==='available'&&!ex.owner)t=ex;}
+    if(t){t.owner=p.id;await saveTag(t);}
+    if(k<9){const cl=DEMO_CLOTHES[k%DEMO_CLOTHES.length];await dbPut('photos',await demoClothesBlob(cl[1],cl[2]),prepKey(p.id));dropPhotoURL(prepKey(p.id));p.itsumoPhotoAt=now;prepSet.add(p.id);}
+    await dbPut('patients',p);n++;}
+  prepDay=toDateInput(now);itSig='';return n;}
 
 /* ---------- 毎秒の見回り ---------- */
 let lastSig='';let titleFlip=false;
@@ -2706,6 +2979,8 @@ async function tick(){
   if(sig!==lastSig){lastSig=sig;await renderActive();}
   else{$$('[data-count]').forEach(el=>{const o=outings.find(x=>x.id===el.dataset.count);if(o)el.textContent=countText(o,now);});updateTimeline(now);updatePreBadges(now);}
   updatePlans(now);
+  if(prepDay&&toDateInput(now)!==prepDay)await purgePrep();
+  if($('#sec-itsumo').classList.contains('active'))await renderItsumo();else $('#cntItsumo').textContent=itList().length;
   const alerts=act.filter(o=>isAlert(o,now));
   const ban=$('#banner');
   const sounding=alerts.filter(o=>needsSound(o,now));let urgent=false;
@@ -2755,7 +3030,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.1.0';
+const APP_VERSION='0.2.0';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

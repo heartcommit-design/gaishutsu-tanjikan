@@ -62,7 +62,7 @@ def main():
         # 既存のデモ3人はそのまま。超過は既存の1人だけ（2.4.0：予定は19件、写真は4人＋予定13件の見本）
         assert pg.evaluate("outings.filter(o=>o.status==='out').length") == 7
         assert pg.evaluate("outings.filter(o=>o.status==='planned').length") == 19
-        assert pg.evaluate("dbKeys('photos').then(k=>k.length)") == 17
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 17  # 0.2.0：いつもの外出の撮っておいた写真（prep:）は数えない
 
         # 時間軸（既定）に4人が出る・超過でない
         pg.click('nav button[data-tab=active]'); pg.wait_for_timeout(500)
@@ -127,7 +127,7 @@ def main():
 
         # 入れ直しても重複しない（入っている間は増えない）
         pg.click('nav button[data-tab=settings]'); pg.click('#demoIn'); pg.wait_for_timeout(800)
-        assert pg.evaluate("[patients.length,outings.length,tags.length]") == [54, 36, 12]  # 2.4.0：7＋予定19＋帰院済み10、タグは予約用の T-10〜T-12 を足す
+        assert pg.evaluate("[patients.length,outings.length,tags.length]") == [54, 36, 24]  # 2.4.0：7＋予定19＋帰院済み10、タグは予約用の T-10〜T-12 を足す。0.2.0：いつもの外出の専用タグ T-13〜T-24 も足す
 
         # 「帰院した」で写真が消える（光秀）
         pg.click('nav button[data-tab=active]'); pg.wait_for_timeout(300)
@@ -137,7 +137,7 @@ def main():
         o = pg.evaluate("(()=>{const o=outings.find(x=>x.pid==='D1051');return {st:o.status,hp:o.hasPhoto,del:!!o.photoDeletedAt,tag:tags.find(t=>t.id==='T-06').status}})()")
         assert o == {'st': 'returned', 'hp': False, 'del': True, 'tag': 'available'}, o
         assert not pg.evaluate("dbKeys('photos').then(k=>k.includes(outings.find(x=>x.pid==='D1051').id))")
-        assert pg.evaluate("dbKeys('photos').then(k=>k.length)") == 16
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 16  # 0.2.0：いつもの外出の撮っておいた写真（prep:）は数えない
 
         # 「デモデータを消す」で4人と写真が消える。デモで足したタグ（T-06〜T-09）も消える
         pg.click('nav button[data-tab=settings]'); pg.click('#demoOut'); pg.wait_for_timeout(1000)
@@ -152,12 +152,12 @@ def main():
         pg.click('nav button[data-tab=settings]'); pg.click('#demoIn'); pg.wait_for_function("document.getElementById('toast').textContent.includes('デモデータを入れました')", timeout=30000)   # 2.4.0：予定の見本写真を作るので、入れ終わりを待つ
         r = pg.evaluate("""({pts:patients.length,pids:new Set(patients.map(p=>p.pid)).size,out:outings.filter(o=>o.status==='out').length,
             busho:outings.filter(o=>/^D105/.test(o.pid)).length,tags:tags.length})""")
-        assert r == {'pts': 54, 'pids': 54, 'out': 7, 'busho': 4, 'tags': 12}, r
-        assert pg.evaluate("dbKeys('photos').then(k=>k.length)") == 17
+        assert r == {'pts': 54, 'pids': 54, 'out': 7, 'busho': 4, 'tags': 24}, r  # 0.2.0：いつもの外出の専用タグ T-13〜T-24 を足す
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 17  # 0.2.0：いつもの外出の撮っておいた写真（prep:）は数えない
 
         # 再読み込みしても写真が残る（端末の中）
         pg.reload(); pg.wait_for_timeout(800); pg.click('#startOv'); pg.wait_for_timeout(800)
-        assert pg.evaluate("dbKeys('photos').then(k=>k.length)") == 17
+        assert pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 17  # 0.2.0：いつもの外出の撮っておいた写真（prep:）は数えない
         b.close()
     print('errors', errs)
     assert not errs

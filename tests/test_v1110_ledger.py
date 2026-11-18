@@ -87,7 +87,7 @@ def main():
         # ================= H2（操作の列）・H1 退院 =================
         tab('patients')
         ops = row('テスト 花子').locator('td').nth(1).locator('button').all_inner_texts()
-        assert ops == ['この患者で登録', '修正', '退院', '過去の記録'], ops
+        assert ops == ['この患者で登録', 'いつもの外出', '修正', '退院', '過去の記録'], ops  # 0.2.0：「いつもの外出」を足した
         assert pg.locator('#ptTable [data-ptdel]').count() == 0, '削除ボタンが行に残っている'
         assert '入院中（6人）' in pg.inner_text('#ptSeg') and '退院（0人）' in pg.inner_text('#ptSeg')
         row('テスト 花子').locator('[data-ptdis]').click(); pg.wait_for_timeout(200)

@@ -408,7 +408,7 @@ def part5(b, errs):
     ok(all(x in hint for x in ['54人', '外出・外泊中7人', '予定19件', '帰院済みの記録10件', '架空の職員30人', '看護師24人', 'PSW 6人']), hint)
     demo_in(pg)
     toast = pg.inner_text('#toast')
-    ok('54人・外出・外泊中7人・予定19件・帰院済みの記録10件・架空の職員30人' in toast, toast)
+    ok('54人・外出・外泊中7人・予定19件・帰院済みの記録10件・いつもの外出12人・架空の職員30人' in toast, toast)  # 0.2.0：いつもの外出12人を足した
     d = pg.evaluate("""()=>{const now=Date.now(),day0=tkDayStart(now),P=outings.filter(o=>o.status==='planned'),A=outings.filter(isActive),R=outings.filter(o=>o.status==='returned');
       const dn=settings.demoNurses||[];
       return {pts:patients.length,plan:P.length,act:A.length,ret:R.length,
@@ -440,7 +440,7 @@ def part5(b, errs):
     ok(d['nurses'][:2] == ['見本 看護師X', '見本 看護師Y'] and d['nurses'][2:] == dn, d['nurses'])
     ok(d['dep'] and d['retN'], '出発確認・帰院確認・登録者が職員30人の中から使われていない')
     ok(d['calPlan'] >= 12, ('カレンダーに予定が出ない', d['calPlan']))
-    ok(pg.evaluate("dbKeys('photos').then(k=>k.length)") == 4 + d['photos'])
+    ok(pg.evaluate("dbKeys('photos').then(k=>k.filter(x=>!String(x).startsWith('prep:')).length)") == 4 + d['photos'])  # 0.2.0：いつもの外出の撮っておいた写真（prep:）は数えない
     # 看護師名の候補：先頭8人＋ほか（全32人）。「ほか」は名前の順・広い枠
     pg.click('nav button[data-tab=new]'); pg.wait_for_timeout(300)
     box = pg.locator('input[name=departNurse] + .nchips')
@@ -466,7 +466,7 @@ def part5(b, errs):
     # 入れ直しても重複しない
     demo_in(pg)
     r = pg.evaluate("({n:settings.nurses.length,u:new Set(settings.nurses).size,p:patients.length,pl:outings.filter(o=>o.status==='planned').length,t:tags.length})")
-    ok(r == {'n': 32, 'u': 32, 'p': 54, 'pl': 19, 't': 12}, r)
+    ok(r == {'n': 32, 'u': 32, 'p': 54, 'pl': 19, 't': 24}, r)  # 0.2.0：いつもの外出の専用タグ T-13〜T-24 を足す
     # 30人を足すと60人を超える時は、超えない分だけ足し、足した分だけを覚える
     pg.click('nav button[data-tab=settings]'); pg.click('#demoOut'); pg.wait_for_timeout(1200)
     pg.evaluate("settings.nurses=[...Array(45)].map((_,i)=>'見本 職員'+(i+1));saveSettings()")
