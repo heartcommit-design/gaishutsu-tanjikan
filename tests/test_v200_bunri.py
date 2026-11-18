@@ -23,7 +23,7 @@ def main():
     sw = open(os.path.join(APP, 'sw.js'), encoding='utf-8').read()
     man = json.load(open(os.path.join(APP, 'manifest.webmanifest'), encoding='utf-8'))
     v = re.search(r"APP_VERSION='([\d.]+)'", html).group(1)
-    assert v == '0.2.0', v
+    assert f"CACHE = 'gaishutsu-tanjikan-v{v}'" in open(os.path.join(APP, 'sw.js'), encoding='utf-8').read(), v  # 版の2か所がそろっている
     assert re.search(r"const CACHE = '([^']+)'", sw).group(1) == f'gaishutsu-tanjikan-v{v}'
     assert "const DB_NAME='gaishutsu_kanri_tanjikan'" in html
     assert "indexedDB.open('gaishutsu_kanri'" not in html, '現行の DB 名で開いている'
@@ -70,7 +70,7 @@ def main():
         keys = pg.evaluate('caches.keys()')
         print('caches', keys)
         assert 'gaishutsu-v1.12.0' in keys, '現行のキャッシュが消された'
-        assert 'gaishutsu-tanjikan-v0.2.0' in keys
+        assert f'gaishutsu-tanjikan-v{v}' in keys
         assert 'gaishutsu-tanjikan-v1.0.0' not in keys, '新版の古いキャッシュが残っている'
         assert pg.evaluate("caches.open('gaishutsu-v1.12.0').then(c=>c.match('/genkou')).then(r=>r&&r.text())") == 'genkou'
         # 試す用（shisaku）・本番用（honban）のキャッシュも消さない

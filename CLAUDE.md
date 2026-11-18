@@ -96,9 +96,12 @@
 - テストで時計を進める時は `pg.clock.install(time=…)` の後に `pg.clock.fast_forward(ms)`、そのあと1秒強待つ（毎秒の tick）。
 
 ## いつもの外出（0.2.0〜）
-- タブ「いつもの外出」（`#sec-itsumo`）。台帳の患者に `p.itsumo={on,dest,dueMode:'fixed'|'plus',dueHM,duePlus}` を持たせた人が、名前のカード（`.it-t`）で並ぶ。
-  設定は台帳の「いつもの外出」（`data-ptit`）か、タブの「人を足す・外す」（`dlgItPick`→`dlgItSet`）。同行はなし（単独）だけ。
-- 出発（`dlgItGo`）：帰院予定の候補は「決まった時刻（例 11:45）」→ +30/45/60/90分。決まった時刻が今から5分〜120分先（`IT_FIXED_MAX`）の時だけ使い、それ以外は +duePlus 分を初めに選ぶ。
+- タブ「いつもの外出」（`#sec-itsumo`）。台帳の患者に `p.itsumo={on,dest}` を持たせた人が、名前のカード（`.it-t`）で並ぶ（0.2.0 の dueMode などは 0.3.0 から使わない）。
+  設定は、カードの「変更」（`data-itedit`）・台帳の「いつもの外出」（`data-ptit`）・タブの「人を足す・外す」（`dlgItPick`）から `dlgItSet`。同行はなし（単独）だけ。
+- 帰院予定（0.3.0〜）：病棟の決まりでアプリ全体に1つ（`settings.itRule={amEnd,pmEnd,pmPlus}`、初めは 11:30・16:00・60分。タブの「帰院の決まり」`dlgItRule` で変える）。
+  `itDueOpts`：amEnd より前の出発は amEnd。amEnd〜pmEnd は pmPlus 分後、ただし pmEnd まで pmPlus 分を切っていたら pmEnd。pmEnd 以降は pmPlus 分後。
+  決まった時刻より後になる「+○分」の候補は出さない。カードの「11:30まで／+60分／16:00まで」は `itDueText`。
+- 出発（`dlgItGo`）・帰院（`dlgItBack`）の画面に「タグ」の行（`itTagRow`。専用なら大きく「T-13 専用」、ないなら「タグなし」）。
   看護師名は必須（前回の人 `settings.itsumoNurse` を入れておく）。記録は `o.itsumo=true`、`note:'いつもの外出'`、ふつうの外出と同じ形（アラーム・一覧・集計はそのまま）。
 - 帰院（`dlgItBack`）：看護師名は必須。写真は消える。「帰院時の確認も書く」でふつうの帰院登録（`dlgReturn`）に移れる。
 - 服装の写真の準備：photos ストアに `'prep:'+患者の台帳id` で置き、`p.itsumoPhotoAt` に撮った時刻。出発でその外出の写真（キーは外出の id）に移し、準備の分は消す（帰院で消える決まりはそのまま）。
@@ -106,7 +109,7 @@
 - 専用タグ：`tags` の `owner` に患者の台帳id。ほかの人の新規登録・予定の出発では選べない（`tagFree`）。帰院で回収せず `available` に戻し（`itTagOnReturn`）、記録に `o.tagKept=true`（一覧の「タグ回収」は「本人が所持（専用）」）。
   タグ管理に「〇〇さん 専用」と「専用をやめる」。持たせられるのは同意書の取得日が台帳にある人だけ。
 - デモ：台帳の21〜32人目（D1021〜D1032）が「いつもの外出」。専用タグは T-11 から空いている番号（デモの予定が T-10〜T-12 を予約するので、ふつうは T-13〜T-24）。9人は写真を撮っておいた状態。
-- テスト：`tests/test_v020_itsumo.py`。画面写真は `tests/make_screens_v020.py`（suite には入れない）。
+- テスト：`tests/test_v020_itsumo.py`・`tests/test_v030_kiin_kimari.py`。画面写真は `tests/make_screens_v020.py`・`make_screens_v030.py`（suite には入れない。256色で保存）。
 
 ## 報告（日本語）
 最後に次の3つを分けて書く：

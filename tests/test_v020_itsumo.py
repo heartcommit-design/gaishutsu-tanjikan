@@ -3,7 +3,7 @@
 (b) タグ管理に「〇〇さん 専用」。専用タグは、ほかの人の新規登録のタグのボタンに出ない。
 (c) 台帳の「いつもの外出」の設定：同意書の取得日がない人には専用タグを持たせられない（欄のそばに知らせ）。タグなしなら足せる。
 (d) 写真の準備：撮ると「✓ 写真」になる。
-(e) 出発：帰院予定の初めの候補は 11:45（決まった時刻）。看護師名が空だと出発できない。撮っておいた写真はその外出の写真に移り、撮っておいた分は消える。専用タグは貸出中に。
+(e) 出発：帰院予定の初めの候補は 11:30（午前の帰院時刻。0.3.0 から病棟の決まりで選ぶ）。看護師名が空だと出発できない。撮っておいた写真はその外出の写真に移り、撮っておいた分は消える。専用タグは貸出中に。
     写真がない人は出発の画面で撮れる（ボタンの文字が「写真なしで出発」→「服装は同じ。出発」に変わる）。
 (f) 帰院予定を過ぎると、その人のカードが赤くなり、上の帯（アラーム）が出る。
 (g) 帰院：看護師名を選ぶ（空だと登録できない）。写真は消え、専用タグは回収せず本人が所持（利用可・専用のまま）。くわしい帰院登録でも回収の欄は出ない。
@@ -56,8 +56,8 @@ with sync_playwright() as p:
     pg.evaluate("window.tone=function(){}")
 
     # (j) 版
-    v = pg.evaluate("APP_VERSION"); ok(v == '0.2.0', v)
-    ok("gaishutsu-tanjikan-v0.2.0" in open(os.path.join(APP, 'sw.js'), encoding='utf-8').read())
+    v = pg.evaluate("APP_VERSION")
+    ok(f"gaishutsu-tanjikan-v{v}" in open(os.path.join(APP, 'sw.js'), encoding='utf-8').read(), v)
 
     # (a) デモ
     pg.click('nav button[data-tab=settings]'); pg.click('#demoIn')
@@ -71,7 +71,7 @@ with sync_playwright() as p:
     a = pid_id(pg, 'D1021'); c = pid_id(pg, 'D1030')
     ok(pg.evaluate("id=>tags.find(t=>t.id==='T-13').owner===id", a))
     ok('T-13 専用' in pg.inner_text(f'[data-itp="{a}"]'))
-    ok('11:45まで' in pg.inner_text(f'[data-itp="{a}"]'))
+    ok('11:30まで' in pg.inner_text(f'[data-itp="{a}"]'))
     pg.screenshot(path=os.path.join(OUT, 'v020_1_ichiran.png'))
 
     # (b) タグ管理・新規登録のタグ
@@ -99,7 +99,7 @@ with sync_playwright() as p:
     pg.select_option('#dlgBody select[name=itTag]', '')
     dlg_click(pg, '保存')
     ok(not pg.locator('#dlg').evaluate('d=>d.open'))
-    ok(pg.evaluate("id=>{const p=patients.find(q=>q.id===id);return p.itsumo.on&&p.itsumo.dest==='喫煙'&&p.itsumo.dueHM==='11:45'}", x))
+    ok(pg.evaluate("id=>{const p=patients.find(q=>q.id===id);return p.itsumo.on&&p.itsumo.dest==='喫煙'}", x))
     ok(pg.evaluate("tags.find(t=>t.id==='T-04').owner") in (None, ''))
     ok('いつもの外出' in pg.locator('#ptTable tr', has_text='D1041').inner_text())
     pg.click('nav button[data-tab=itsumo]'); pg.wait_for_timeout(500)
@@ -120,8 +120,8 @@ with sync_playwright() as p:
     # (e) 出発（10:58）
     ff(pg, 28 * 60000)
     pg.click(f'[data-itgo="{a}"]'); pg.wait_for_timeout(500)
-    first = pg.locator('#dlgBody [data-itdue]').first
-    ok('11:45' in first.inner_text() and 'on' in first.get_attribute('class'), first.inner_text())
+    first = pg.locator('#dlgBody [data-itdue].on')
+    ok(first.count() == 1 and '11:30' in first.inner_text(), first.inner_text())
     ok('服装は同じ。出発' in pg.locator('#dlgActions button').last.inner_text())
     ok(pg.locator('#itGoPh img').count() == 1)
     pg.fill('#dlgBody input[name=nurse]', '')
@@ -131,7 +131,7 @@ with sync_playwright() as p:
     pg.screenshot(path=os.path.join(OUT, 'v020_2_go.png'))
     dlg_click(pg, '出発')
     o = pg.evaluate("id=>{const o=outings.find(x=>x.patientId===id&&x.status==='out');return o&&{id:o.id,due:new Date(o.dueAt).getHours()*60+new Date(o.dueAt).getMinutes(),tag:o.tagId,ph:o.hasPhoto,it:o.itsumo,n:o.departNurse}}", a)
-    ok(o and o['it'] and o['due'] == 11 * 60 + 45 and o['tag'] == 'T-13' and o['ph'] and o['n'] == '(デモ) 看護師 見本', o)
+    ok(o and o['it'] and o['due'] == 11 * 60 + 30 and o['tag'] == 'T-13' and o['ph'] and o['n'] == '(デモ) 看護師 見本', o)
     keys = photo_keys(pg)
     ok(o['id'] in keys and f'prep:{a}' not in keys, keys)
     ok(pg.evaluate("tags.find(t=>t.id==='T-13').status") == 'inuse')
@@ -160,7 +160,7 @@ with sync_playwright() as p:
     # (g) 帰院
     pg.click(f'[data-itback="{o["id"]}"]'); pg.wait_for_timeout(400)
     ok(pg.input_value('#dlgBody input[name=nurse]') == '(デモ) 看護師 見本')
-    ok('本人が持ったまま' in pg.inner_text('#dlgBody'))
+    ok('本人が持っています' in pg.inner_text('#dlgBody') and '回収しません' in pg.inner_text('#dlgBody') and pg.locator('#dlgBody input[name=tagBack]').count() == 0)  # 0.3.0：タグの行で示す
     pg.fill('#dlgBody input[name=nurse]', '')
     dlg_click(pg, '帰院')
     ok('看護師' in pg.inner_text('#dlg .ferr'))

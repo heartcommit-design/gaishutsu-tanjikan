@@ -710,6 +710,11 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
 .it-pick{margin-top:8px;max-height:52vh;overflow:auto}
 .it-prow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line2)}.it-prow .sp{flex:1}.it-prow b{white-space:nowrap}
 @media (max-width:1100px) and (min-width:700px){nav button{font-size:15px;padding:0 9px}nav .cnt{margin-left:3px;min-width:22px;padding:0 5px}}
+.it-m2{display:flex;align-items:center;gap:8px;overflow:visible}.it-m2>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.it-edit{flex:0 0 auto;font:inherit;font-size:12px;font-weight:700;padding:1px 10px;min-height:26px;border-radius:9px;border:1px solid var(--fline);background:var(--btn);color:var(--sub);cursor:pointer;margin-left:auto}
+.it-tagbig{display:inline-block;font-size:20px;font-weight:800;padding:2px 12px;border-radius:10px;background:var(--tagbg);color:var(--tagtx);letter-spacing:.04em;white-space:nowrap}
+.it-tagbig.none{background:var(--mutedbg);color:var(--mutedtx);border:1px dashed var(--fline)}
+.it-kv>span{align-self:center}
 .own-b{display:inline-block;padding:3px 12px;border-radius:12px;background:var(--psel);color:var(--pseltx);font-weight:800;font-size:14px;white-space:nowrap}
 #dlgActions .btn{white-space:nowrap}
 </style>
@@ -892,7 +897,7 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
 <!-- 0.2.0 いつもの外出 -->
 <section id="sec-itsumo">
   <div class="it-head"><h2 id="itTitle">いつもの外出</h2><span class="hint" id="itHelp"></span><span class="sp"></span>
-    <button type="button" class="btn" id="itPrepBtn">📷 写真の準備</button><button type="button" class="btn" id="itMembers">人を足す・外す</button></div>
+    <button type="button" class="btn" id="itPrepBtn">📷 写真の準備</button><button type="button" class="btn" id="itMembers">人を足す・外す</button><button type="button" class="btn" id="itRuleBtn">帰院の決まり</button></div>
   <div class="it-sum" id="itSum"></div>
   <div class="it-grid" id="itGrid"></div>
   <input type="file" accept="image/*" capture="environment" id="itPhotoIn" hidden>
@@ -2739,8 +2744,13 @@ $('#demoOut').addEventListener('click',async()=>{for(const o of outings.filter(x
 // 患者台帳に「いつもの外出」（行き先・帰院予定の決め方・専用タグ）を覚えさせ、当日は名前の「出発」を押して服装を確かめ、看護師名を選んで出発する。
 // 服装の写真は混む前に撮っておける（photos ストアに 'prep:患者の台帳id' で置く）。出発でその外出の写真に移し、帰院で消える（これまでと同じ）。
 // 使わなかった写真は日付が変わったら（0時）消す。専用タグは患者がずっと持つ（tags の owner に患者の台帳id）。帰院で回収しない。
-const IT_DEF={dest:'喫煙',dueMode:'fixed',dueHM:'11:45',duePlus:45};
-const IT_FIXED_MAX=120;     // 決まった時刻を帰院予定に使うのは、それが今から5分〜120分先の時だけ（それ以外は +duePlus 分）
+const IT_DEF={dest:'喫煙'};
+// 0.3.0：帰院予定は病棟の決まり（アプリ全体で1つ。「いつもの外出」タブの「帰院の決まり」で変えられる）
+//  午前（午前の帰院時刻 amEnd より前）：初めは amEnd（例 11:30）
+//  午後（amEnd〜pmEnd）：初めは出発の pmPlus 分後（例 60分）。ただし pmEnd（例 16:00）まで pmPlus 分を切っていたら pmEnd
+//  pmEnd を過ぎた後：決まった時刻はなく、出発の pmPlus 分後
+const IT_RULE_DEF={amEnd:'11:30',pmEnd:'16:00',pmPlus:60};
+const itRule=()=>({...IT_RULE_DEF,...(settings.itRule||{})});
 const IT_PLUS=[30,45,60,90];
 const prepKey=id=>'prep:'+id;
 let prepSet=new Set(),prepDay='',itPrepMode=false,itPhotoFor=null,itSig='',itTok=0;
@@ -2755,16 +2765,21 @@ const itActive=p=>outings.find(o=>isActive(o)&&(o.patientId===p.id||(p.pid&&o.pi
 const itTodayBack=p=>{const t=toDateInput(Date.now());return outings.filter(o=>o.status==='returned'&&(o.patientId===p.id||(p.pid&&o.pid===p.pid))&&toDateInput(o.returnedAt)===t).sort((a,b)=>b.returnedAt-a.returnedAt);};
 const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes());};
 // 帰院予定の候補（いちばん目が初めから選ばれている）
-// 並びは「決まった時刻」→ +30・+45・+60・+90分。初めに選ぶのは、決まった時刻が使える時はそれ、ほかは +duePlus 分（def:true）
-function itDueOpts(p,now){const c=itConf(p),M=60000,out=[];
-  const fx=c.dueHM&&tkAtHM(now,c.dueHM);const fxOk=!!fx&&fx-now>=5*M&&fx-now<=IT_FIXED_MAX*M;
-  if(fxOk)out.push({at:fx,label:`${c.dueHM}（決まった時刻）`,def:c.dueMode==='fixed'});
-  const plus=[...new Set([...IT_PLUS,+c.duePlus])].sort((a,b)=>a-b);
-  for(const m of plus){const at=Math.ceil((now+m*M)/M)*M;out.push({at,label:`+${m}分（${hm(at)}）`,def:false});}
-  if(!out.some(x=>x.def)){const i=out.findIndex(x=>x.label.startsWith(`+${c.duePlus}分`));out[i<0?0:i].def=true;}
+// 帰院予定の候補。初めに選ぶもの（def:true）は上の決まりのとおり。決まった時刻がある時は、それより後の「+○分」は出さない
+function itDueOpts(p,now){const r=itRule(),M=60000,out=[],ceil=t=>Math.ceil(t/M)*M;
+  const am=tkAtHM(now,r.amEnd),pm=tkAtHM(now,r.pmEnd);
+  const lim=now<am?{at:am,label:`${r.amEnd}（午前の帰院時刻）`}:now<pm?{at:pm,label:`${r.pmEnd}（午後の帰院時刻）`}:null;
+  let def;
+  if(!lim)def=ceil(now+r.pmPlus*M);
+  else if(lim.at===am)def=am;
+  else def=pm-now<r.pmPlus*M?pm:ceil(now+r.pmPlus*M);
+  const plus=[...new Set([...IT_PLUS,+r.pmPlus])].sort((a,b)=>a-b);
+  for(const m of plus){const at=ceil(now+m*M);if(lim&&at>=lim.at)continue;out.push({at,label:`+${m}分（${hm(at)}）`,def:at===def});}
+  if(lim)out.push({at:lim.at,label:lim.label,def:lim.at===def});
+  if(!out.some(x=>x.def))out.unshift({at:def,label:`+${r.pmPlus}分（${hm(def)}）`,def:true});
   return out;}
-function itDueText(p,now){const c=itConf(p);now=now||Date.now();const fx=c.dueHM&&tkAtHM(now,c.dueHM);
-  return c.dueMode==='fixed'&&fx&&fx-now>=5*60000&&fx-now<=IT_FIXED_MAX*60000?`${c.dueHM}まで`:`+${c.duePlus}分`;}
+function itDueText(p,now){now=now||Date.now();const d=itDueOpts(p,now).find(x=>x.def);const r=itRule();
+  return /午前|午後/.test(d.label)?`${hm(d.at)}まで`:`+${r.pmPlus}分`;}
 
 // 撮っておいた写真の見直し（起動時・日付が変わった時・復元の後）。今日の写真で、台帳にいる人の分だけ残す
 async function purgePrep(){
@@ -2776,6 +2791,9 @@ async function purgePrep(){
 }
 async function dropPrep(p){await dbDel('photos',prepKey(p.id));dropPhotoURL(prepKey(p.id));prepSet.delete(p.id);if(p.itsumoPhotoAt){p.itsumoPhotoAt=null;await dbPut('patients',p);}}
 
+/* タグの行（出発・帰院の画面で大きく見せる） */
+function itTagRow(t,going){return t?`<b>タグ</b><span><span class="it-tagbig">${esc(t.id)}</span> <b class="nw">専用・本人が持っています</b> <span class="nw">（${going?'渡す・回収はなし':'回収しません'}）</span></span>`
+  :`<b>タグ</b><span><span class="it-tagbig none">タグなし</span> （タグを持たずに${going?'出かけます':'出かけています'}）</span>`;}
 /* 画面 */
 function itTileHTML(p,now){
   const o=itActive(p),c=itConf(p),t=ownedTag(p);let cls='',st='';
@@ -2791,9 +2809,9 @@ function itTileHTML(p,now){
     else{cls='out';st=`<span class="it-outt">${hm(o.dueAt)}まで あと${Math.max(0,Math.ceil((o.dueAt-now)/60000))}分</span><button type="button" class="btn ok it-b" data-itback="${o.id}">帰院</button>`;}
   }else{const b=itTodayBack(p)[0];
     st=`<span class="${hasPrep(p)?'it-sub':'it-warnt'}">${hasPrep(p)?'写真 '+hm(p.itsumoPhotoAt):'写真まだ'}${b?`<small>（今日 ${hm(b.returnedAt)} 帰院）</small>`:''}</span><button type="button" class="btn pri it-b" data-itgo="${p.id}">出発</button>`;}
-  return `<div class="it-t ${cls}" data-itp="${p.id}">${ph}<div class="it-hd"><div class="it-nm">${esc(p.name)}</div><div class="it-meta">${tagHtml}${esc(wardText(p))}</div><div class="it-meta">${esc(c.dest)}・${esc(itDueText(p,now))}</div></div><div class="it-st">${st}</div></div>`;
+  return `<div class="it-t ${cls}" data-itp="${p.id}">${ph}<div class="it-hd"><div class="it-nm">${esc(p.name)}</div><div class="it-meta">${tagHtml}${esc(wardText(p))}</div><div class="it-meta it-m2"><span>${esc(c.dest)}・${esc(itDueText(p,now))}</span>${itPrepMode?'':`<button type="button" class="it-edit" data-itedit="${p.id}" title="この人の「いつもの外出」を変える">変更</button>`}</div></div><div class="it-st">${st}</div></div>`;
 }
-function itSigOf(now){const m=Math.floor(now/60000);return itPrepMode+'#'+m+'#'+itList().map(p=>{const o=itActive(p);return p.id+':'+(o?o.id+stateOf(o,now)+(o.hasPhoto?1:0):'-')+':'+(hasPrep(p)?p.itsumoPhotoAt:0)+':'+(ownedTag(p)||{}).id+':'+itTodayBack(p).length+':'+JSON.stringify(p.itsumo);}).join('|');}
+function itSigOf(now){const m=Math.floor(now/60000);return itPrepMode+'#'+m+'#'+JSON.stringify(settings.itRule||{})+'#'+itList().map(p=>{const o=itActive(p);return p.id+':'+(o?o.id+stateOf(o,now)+(o.hasPhoto?1:0):'-')+':'+(hasPrep(p)?p.itsumoPhotoAt:0)+':'+(ownedTag(p)||{}).id+':'+itTodayBack(p).length+':'+JSON.stringify(p.itsumo);}).join('|');}
 async function renderItsumo(force){
   const now=Date.now(),sig=itSigOf(now);$('#cntItsumo').textContent=itList().length;
   if(!force&&sig===itSig)return;itSig=sig;
@@ -2801,8 +2819,8 @@ async function renderItsumo(force){
   const prepN=list.filter(hasPrep).length;
   $('#itTitle').textContent=itPrepMode?'📷 写真の準備':'いつもの外出';
   $('#itHelp').textContent=itPrepMode?'混む前に一人ずつ撮っておきます。出発の時に看護師が服装を見比べます。写真は帰院で消え、使わなかった写真も0時に消えます。'
-    :'「出発」を押し、服装が写真と同じか確かめて出発します。戻ったら「帰院」を押します。';
-  $('#itPrepBtn').textContent=itPrepMode?'準備を終える':'📷 写真の準備';$('#itPrepBtn').classList.toggle('pri',itPrepMode);$('#itMembers').hidden=itPrepMode;
+    :'「出発」を押し、服装が写真と同じか確かめて出発します。戻ったら「帰院」。行き先やタグを変える時は、名前の下の「変更」。';
+  $('#itPrepBtn').textContent=itPrepMode?'準備を終える':'📷 写真の準備';$('#itPrepBtn').classList.toggle('pri',itPrepMode);$('#itMembers').hidden=itPrepMode;$('#itRuleBtn').hidden=itPrepMode;
   $('#itSum').innerHTML=itPrepMode?`<span class="g">写真あり ${prepN}人</span><span class="o">写真まだ ${list.length-prepN-list.filter(p=>!hasPrep(p)&&itActive(p)).length}人</span>`
     :`<span>出発前 ${list.length-outN}人</span><span class="o">外出中 ${outN-overN}人</span>${overN?`<span class="r">帰院予定を過ぎ ${overN}人</span>`:''}<span>写真の準備 ${prepN}／${list.length}人</span>`;
   $('#itGrid').innerHTML=list.map(p=>itTileHTML(p,now)).join('')||'<div class="empty">「いつもの外出」の人がまだいません。「人を足す・外す」から選んでください。</div>';
@@ -2811,8 +2829,10 @@ async function renderItsumo(force){
 }
 $('#itPrepBtn').addEventListener('click',()=>{itPrepMode=!itPrepMode;renderItsumo(true);});
 $('#itMembers').addEventListener('click',()=>dlgItPick());
-$('#itGrid').addEventListener('click',e=>{const g=e.target.closest('[data-itgo]'),b=e.target.closest('[data-itback]'),s=e.target.closest('[data-itsnap]');
-  if(g)dlgItGo(patients.find(p=>p.id===g.dataset.itgo));
+$('#itRuleBtn').addEventListener('click',()=>dlgItRule());
+$('#itGrid').addEventListener('click',e=>{const g=e.target.closest('[data-itgo]'),b=e.target.closest('[data-itback]'),s=e.target.closest('[data-itsnap]'),ed=e.target.closest('[data-itedit]');
+  if(ed)dlgItSet(patients.find(p=>p.id===ed.dataset.itedit));
+  else if(g)dlgItGo(patients.find(p=>p.id===g.dataset.itgo));
   else if(b){const o=outings.find(x=>x.id===b.dataset.itback);if(o)dlgItBack(o);}
   else if(s){itPhotoFor=s.dataset.itsnap;$('#itPhotoIn').click();}
   else{const ph=e.target.closest('.it-ph img');if(ph&&ph.src)openDlg('服装写真',`<img src="${ph.src}" style="width:100%;border-radius:8px" alt="服装写真"><p class="hint">帰院で消えます。使わなかった写真も0時に消えます。</p>`,[{label:'閉じる'}]);}});
@@ -2826,13 +2846,12 @@ function dlgItGo(p){
   if(itActive(p)){toast(`${p.name} さんはすでに外出・外泊中です`);return;}
   const c=itConf(p),t=ownedTag(p),cs=consentState(p),opts=itDueOpts(p,now);let shot=null,shotURL=null;
   const pre=hasPrep(p);
-  const tagLine=t?`<span class="it-tag">${esc(t.id)} 専用</span>（本人が持っています。渡す・回収はありません）`:'<span class="it-tag none">タグなし</span>';
   openDlg(`${p.name}　の出発`,`
-    <div class="it-dsub">${esc(wardText(p))}・${tagLine}</div>
+    <div class="it-dsub">${esc(wardText(p))}${p.pid?'・ID '+esc(p.pid):''}</div>
     <div class="it-drow"><div class="it-dph" id="itGoPh">${pre?'<img alt="服装写真">':'<div class="it-noph big">写真<br>まだ</div>'}</div>
       <div><div class="it-q" id="itGoQ">${pre?`今の服装は、この写真（${hm(p.itsumoPhotoAt)}）と<span class="nw">同じですか</span>`:'撮っておいた写真がありません。<span class="nw">今、撮ってください。</span>'}</div>
         <label class="btn it-cam">${pre?'服装がちがう（撮り直す）':'📷 撮る'}<input type="file" accept="image/*" capture="environment" id="itGoIn" hidden></label>
-        <div class="it-kv"><b>行き先</b><span>${esc(c.dest)}（同行なし）</span><b>出発</b><span>${hm(now)}（今）</span></div></div></div>
+        <div class="it-kv">${itTagRow(t,true)}<b>行き先</b><span>${esc(c.dest)}（同行なし）</span><b>出発</b><span>${hm(now)}（今）</span></div></div></div>
     <div class="it-lbl">帰院予定</div><div class="seg it-due">${opts.map(x=>`<button type="button" class="btn${x.def?' on':''}" data-itdue="${x.at}">${esc(x.label)}</button>`).join('')}</div>
     <input type="hidden" name="due" value="${opts.find(x=>x.def).at}">
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
@@ -2871,9 +2890,9 @@ function dlgItGo(p){
 function dlgItBack(o){
   const t=o.tagId&&tags.find(x=>x.id===o.tagId),own=!!(t&&t.owner&&t.owner===o.patientId);
   openDlg(`${o.name}　の帰院`,`
-    <div class="it-kv"><b>出発</b><span>${hm(o.departAt)}（${esc(o.dest||'')}）</span><b>帰院予定</b><span>${hm(o.dueAt)}</span><b>帰院</b><span>${hm(Date.now())}（今）</span></div>
+    <div class="it-kv">${own?itTagRow(t,false):o.tagId?`<b>タグ</b><span><span class="it-tagbig">${esc(o.tagId)}</span>（貸し出したタグ。下で回収を確かめます）</span>`:itTagRow(null,false)}<b>出発</b><span>${hm(o.departAt)}（${esc(o.dest||'')}）</span><b>帰院予定</b><span>${hm(o.dueAt)}</span><b>帰院</b><span>${hm(Date.now())}（今）</span></div>
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
-    ${o.tagId?(own?`<p class="hint">専用タグ <b>${esc(o.tagId)}</b> は本人が持ったままにします（回収しません）。</p>`:`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`):''}
+    ${o.tagId&&!own?`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`:''}
     ${o.hasPhoto?'<p class="warnbox">帰院を登録すると服装写真は消えます（元に戻せません）。</p>':''}
     <p style="margin:6px 0 0"><button type="button" class="linkbtn" id="itBackMore">帰院時の確認（持ち物・様子など）も書く</button></p>`,
   [{label:'やめる'},{label:'帰院',cls:'ok big',onClick:async f=>{
@@ -2891,6 +2910,22 @@ async function itTagOnReturn(o,back,nurse){const t=tags.find(x=>x.id===o.tagId);
   if(t){t.outingId=null;t.status=own||back?'available':'missing';await saveTag(t);}
   if(own){o.tagKept=true;addLog(o,`専用タグ ${o.tagId} は本人が持ったまま`,nurse);}
   else{addLog(o,back?`タグ ${o.tagId} 回収`:`タグ ${o.tagId} 未回収`,nurse);o.tagReturned=!!back;}}
+
+/* 帰院の決まり（アプリ全体） */
+function itRuleText(){const r=itRule();return `午前は${r.amEnd}、午後は${r.pmPlus}分後（${r.pmEnd}まで${r.pmPlus}分を切ったら${r.pmEnd}）`;}
+function dlgItRule(){const r=itRule();
+  openDlg('帰院予定の決まり（いつもの外出）',`<p class="hint" style="margin-top:0">出発の画面で初めに選ばれる帰院予定です。出発の画面で選び直すこともできます。</p>
+    <div class="grid"><label>午前の帰院時刻<input type="time" name="amEnd" value="${esc(r.amEnd)}"></label>
+      <label>午後の帰院時刻<input type="time" name="pmEnd" value="${esc(r.pmEnd)}"></label>
+      <label>午後の帰院予定（出発から）<select name="pmPlus">${IT_PLUS.map(m=>`<option value="${m}"${m===+r.pmPlus?' selected':''}>${m}分後</option>`).join('')}</select></label></div>
+    <p class="hint" style="margin:10px 0 2px">いまの決まり（保存すると変わります）</p>
+    <ul class="hint" style="margin:0;padding-left:1.2em"><li>${esc(r.amEnd)} より前の出発 → <b>${esc(r.amEnd)}</b></li><li>${esc(r.amEnd)} 以降の出発 → <b>${r.pmPlus}分後</b>（<span class="nw">${esc(r.pmEnd)} まで${r.pmPlus}分を切ったら ${esc(r.pmEnd)}</span>）</li><li>${esc(r.pmEnd)} 以降の出発 → <b>${r.pmPlus}分後</b></li></ul>`,
+  [{label:'やめる'},{label:'保存',cls:'pri',onClick:async f=>{const am=val(f,'amEnd'),pm=val(f,'pmEnd'),pl=+val(f,'pmPlus')||60,E=[];
+    if(!/^\d{2}:\d{2}$/.test(am))E.push(['amEnd','午前の帰院時刻を入れてください']);
+    if(!/^\d{2}:\d{2}$/.test(pm))E.push(['pmEnd','午後の帰院時刻を入れてください']);
+    else if(am&&pm<=am)E.push(['pmEnd','午後の帰院時刻は、午前の帰院時刻より後にしてください']);
+    if(E.length)return fieldErrs(f,E);
+    settings.itRule={amEnd:am,pmEnd:pm,pmPlus:pl};await saveSettings();itSig='';renderItsumo(true);toast('帰院予定の決まりを保存しました：'+itRuleText(),4000);}}]);}
 
 /* 人を足す・外す（台帳から選ぶ） */
 function dlgItPick(){
@@ -2911,27 +2946,23 @@ function dlgItSet(p){
     <label>行き先<input name="itDest" value="${esc(c.dest)}"></label><div class="nchips mchips">${dests.slice(0,10).map(t=>`<button type="button" class="nchip" data-memo="${esc(t)}" data-field="itDest">${esc(t)}</button>`).join('')}</div>
     <p class="hint" style="margin:2px 0 6px">同行はなし（単独）として登録します。</p>
     <div class="it-lbl">帰院予定</div>
-    <div class="seg"><label class="btn${c.dueMode==='fixed'?' on':''}"><input type="radio" name="itMode" value="fixed"${c.dueMode==='fixed'?' checked':''} hidden>決まった時刻</label><label class="btn${c.dueMode!=='fixed'?' on':''}"><input type="radio" name="itMode" value="plus"${c.dueMode!=='fixed'?' checked':''} hidden>出発から○分</label></div>
-    <div class="grid" style="margin-top:6px"><label>決まった時刻<input type="time" name="itHM" value="${esc(c.dueHM)}"></label>
-      <label>出発から<select name="itPlus">${IT_PLUS.map(m=>`<option value="${m}"${m===+c.duePlus?' selected':''}>${m}分</option>`).join('')}</select></label></div>
-    <p class="hint" style="margin:2px 0 6px">決まった時刻が過ぎている時や、2時間より先の時は「出発から○分」を使います（出発の画面で選び直せます）。</p>
+    <p class="hint" style="margin:0 0 6px">病棟の決まりで自動で選びます（出発の画面で選び直せます）。<br><span class="nw">午前は ${esc(itRule().amEnd)}</span>　<span class="nw">午後は ${itRule().pmPlus}分後（${esc(itRule().pmEnd)} まで）</span>　<span class="nw">変える時はタブの「帰院の決まり」</span></p>
     <div class="it-lbl">専用タグ（ずっと持たせるタグ）</div>
     <select name="itTag"${act?' disabled':''}><option value="">専用タグなし（その都度渡す・渡さない）</option>${cand.map(t=>`<option value="${esc(t.id)}"${cur&&cur.id===t.id?' selected':''}>${esc(t.id)}${t.findName&&t.findName!==t.id?'（'+esc(t.findName)+'）':''}</option>`).join('')}</select>
     ${act?'<p class="hint">外出中のため、専用タグは帰院の後で変えられます。</p>':''}
     <p class="hint">専用タグは、ほかの人の登録では選べなくなり、帰院の時も回収しません。同意書の取得日が台帳にある人だけに持たせられます。</p>`,
   [{label:'やめる'},{label:'保存',cls:'pri',onClick:async f=>{
-    const on=f.elements.itOn.value!=='0',dest=val(f,'itDest'),mode=f.elements.itMode.value||'fixed',HM=val(f,'itHM'),plus=+val(f,'itPlus')||45,tid=act?(cur?cur.id:''):val(f,'itTag');
+    const on=f.elements.itOn.value!=='0',dest=val(f,'itDest'),tid=act?(cur?cur.id:''):val(f,'itTag');
     const E=[],cs=consentState(p);
     if(on&&!dest)E.push(['itDest','行き先を入れてください']);
-    if(on&&mode==='fixed'&&!/^\d{2}:\d{2}$/.test(HM))E.push(['itHM','決まった時刻を入れてください']);
     if(on&&tid&&cs.st==='withdrawn')E.push(['itTag',`この人は ${ymd(cs.date)} に同意を撤回しています。専用タグは持たせられません`]);
     else if(on&&tid&&cs.st!=='ok')E.push(['itTag','同意書の取得日が台帳にありません。患者台帳の「取得日を入れる」を先にしてください']);
     if(E.length)return fieldErrs(f,E);
-    p.itsumo={on,dest:dest||IT_DEF.dest,dueMode:mode,dueHM:HM||IT_DEF.dueHM,duePlus:plus};
+    p.itsumo={on,dest:dest||IT_DEF.dest};
     const newTid=on?tid:(act&&cur?cur.id:'');
     if(cur&&cur.id!==newTid){cur.owner=null;await saveTag(cur);}
     if(newTid&&(!cur||cur.id!==newTid)){const t=tags.find(x=>x.id===newTid);if(t){t.owner=p.id;await saveTag(t);}}
-    ptLog(p,on?`いつもの外出：${p.itsumo.dest}・${mode==='fixed'?HM+'まで':'+'+plus+'分'}・${newTid?'専用タグ '+newTid:'専用タグなし'}`:'いつもの外出から外す'+(cur&&cur.id!==newTid?`（専用タグ ${cur.id} を外す）`:''));
+    ptLog(p,on?`いつもの外出：${p.itsumo.dest}・${newTid?'専用タグ '+newTid:'専用タグなし'}`:'いつもの外出から外す'+(cur&&cur.id!==newTid?`（専用タグ ${cur.id} を外す）`:''));
     await dbPut('patients',p);if(!on)await dropPrep(p);
     itSig='';renderItsumo(true);if($('#sec-patients').classList.contains('active'))renderPatients();if($('#sec-tags').classList.contains('active'))renderTags();
     toast(on?`${p.name} さんを「いつもの外出」にしました`:`${p.name} さんを「いつもの外出」から外しました`);
@@ -2945,7 +2976,7 @@ $('#ptTable').addEventListener('click',e=>{const b=e.target.closest('[data-ptit]
 async function demoItsumo(list,{now,D}){let n=0,num=11;
   for(let k=0;k<12;k++){const p=list[20+k];if(!p||itActive(p))continue;
     p.consentDate=p.consentDate||toDateInput(now-30*D);if(!(p.consentLog||[]).length)p.consentLog=[{at:now-30*D,text:'同意書取得日を '+ymd(p.consentDate)+' に登録',by:''}];
-    p.itsumo={on:true,dest:'喫煙',dueMode:'fixed',dueHM:'11:45',duePlus:45};
+    p.itsumo={on:true,dest:'喫煙'};
     // T-11 から順に、無い番号は足し（「デモ」の印）、あっても空いていればそれを使う（予定で予約中などのタグは飛ばす）
     let t=null;while(!t&&num<100){const tid='T-'+pad(num++);const ex=tags.find(x=>x.id===tid);
       if(!ex){if(await addTag(tid)){t=tags.find(x=>x.id===tid);t.demo=true;}}else if(ex.status==='available'&&!ex.owner)t=ex;}
@@ -3030,7 +3061,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.2.0';
+const APP_VERSION='0.3.0';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
