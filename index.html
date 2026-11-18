@@ -706,7 +706,8 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
 .it-cam{display:inline-flex;align-items:center;color:var(--ink);margin:0 0 6px}
 .it-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:16px;margin:4px 0}.it-kv b{white-space:nowrap}
 .it-lbl{font-size:15px;font-weight:800;margin:10px 0 4px}
-.it-due .btn{white-space:nowrap}
+.it-due .btn,.it-lend .btn{white-space:nowrap}.it-lend .btn{min-width:72px}
+.it-lend.invalid{outline:2px solid var(--bad);outline-offset:3px;border-radius:12px}
 .it-pick{margin-top:8px;max-height:52vh;overflow:auto}
 .it-prow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line2)}.it-prow .sp{flex:1}.it-prow b{white-space:nowrap}
 @media (max-width:1100px) and (min-width:700px){nav button{font-size:15px;padding:0 9px}nav .cnt{margin-left:3px;min-width:22px;padding:0 5px}}
@@ -2797,7 +2798,7 @@ function itTagRow(t,going){return t?`<b>タグ</b><span><span class="it-tagbig">
 /* 画面 */
 function itTileHTML(p,now){
   const o=itActive(p),c=itConf(p),t=ownedTag(p);let cls='',st='';
-  const tagHtml=t?`<span class="it-tag">${esc(t.id)} 専用</span>`:'<span class="it-tag none">タグなし</span>';
+  const tagHtml=t?`<span class="it-tag">${esc(t.id)} 専用</span>`:o&&o.tagId?`<span class="it-tag">${esc(o.tagId)} 貸出中</span>`:'<span class="it-tag none">専用タグなし</span>';
   const phKey=o&&o.hasPhoto?o.id:(hasPrep(p)?prepKey(p.id):'');
   const ph=phKey?`<div class="it-ph"><img data-itph="${esc(phKey)}" alt="服装写真"></div>`:'<div class="it-noph">写真<br>まだ</div>';
   if(itPrepMode){
@@ -2846,12 +2847,19 @@ function dlgItGo(p){
   if(itActive(p)){toast(`${p.name} さんはすでに外出・外泊中です`);return;}
   const c=itConf(p),t=ownedTag(p),cs=consentState(p),opts=itDueOpts(p,now);let shot=null,shotURL=null;
   const pre=hasPrep(p);
+  // 0.3.0：専用タグのない人は、渡すタグを選ぶ（同意書の取得日が台帳にある人だけ）。渡さない時は「タグなし」を押す
+  const lendAv=t?[]:tags.filter(x=>x.status==='available'&&!x.owner).sort((a,b)=>String(a.id).localeCompare(String(b.id),'ja',{numeric:true}));
+  const canLend=!t&&cs.st==='ok'&&lendAv.length>0;
+  const lendNote=t?'':cs.st==='withdrawn'?`同意を撤回しているため（${ymd(cs.date)}）、タグは渡せません。`:cs.st!=='ok'?'同意書の取得日が患者台帳にないため、タグは渡せません。':!lendAv.length?'今、渡せるタグがありません（タグ管理で確かめてください）。':'';
   openDlg(`${p.name}　の出発`,`
     <div class="it-dsub">${esc(wardText(p))}${p.pid?'・ID '+esc(p.pid):''}</div>
     <div class="it-drow"><div class="it-dph" id="itGoPh">${pre?'<img alt="服装写真">':'<div class="it-noph big">写真<br>まだ</div>'}</div>
       <div><div class="it-q" id="itGoQ">${pre?`今の服装は、この写真（${hm(p.itsumoPhotoAt)}）と<span class="nw">同じですか</span>`:'撮っておいた写真がありません。<span class="nw">今、撮ってください。</span>'}</div>
         <label class="btn it-cam">${pre?'服装がちがう（撮り直す）':'📷 撮る'}<input type="file" accept="image/*" capture="environment" id="itGoIn" hidden></label>
-        <div class="it-kv">${itTagRow(t,true)}<b>行き先</b><span>${esc(c.dest)}（同行なし）</span><b>出発</b><span>${hm(now)}（今）</span></div></div></div>
+        <div class="it-kv">${t?itTagRow(t,true):canLend?`<b>タグ</b><span id="itLendShow"><span class="it-sub">下で選んでください</span></span>`:itTagRow(null,true)}<b>行き先</b><span>${esc(c.dest)}（同行なし）</span><b>出発</b><span>${hm(now)}（今）</span></div></div></div>
+    ${canLend?`<div class="it-lbl">渡すタグ<span class="req">必須</span><span class="it-sub" style="font-weight:600;font-size:13px;margin-left:8px">渡さない時は「タグなし」</span></div>
+    <div class="seg it-lend" id="itLendSeg">${lendAv.map(x=>`<button type="button" class="btn" data-itlend="${esc(x.id)}">${esc(x.id)}</button>`).join('')}<button type="button" class="btn" data-itlend="">タグなし</button></div>
+    <input type="hidden" name="lend" value="-">`:lendNote?`<p class="hint" style="margin:6px 0 0">${esc(lendNote)}</p>`:''}
     <div class="it-lbl">帰院予定</div><div class="seg it-due">${opts.map(x=>`<button type="button" class="btn${x.def?' on':''}" data-itdue="${x.at}">${esc(x.label)}</button>`).join('')}</div>
     <input type="hidden" name="due" value="${opts.find(x=>x.def).at}">
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
@@ -2863,23 +2871,30 @@ function dlgItGo(p){
     if(t&&cs.st!=='ok')E.push([null,cs.st==='withdrawn'?'同意を撤回しているため、専用タグを持たせて出発できません（患者台帳で専用タグを外してください）':'同意書の取得日が患者台帳にないため出発できません（患者台帳で取得日を入れてください）']);
     if(itActive(p))E.push([null,`${p.name} さんはすでに外出・外泊中です`]);
     if(t&&!(t.status==='available'))E.push([null,`専用タグ ${t.id} は今「${TAG_ST[t.status]||t.status}」です。タグ管理で確かめてください`]);
+    const lendId=canLend?val(f,'lend'):'';let lt=null;
+    if(canLend&&lendId==='-')E.push([$('#itLendSeg'),'渡すタグを選んでください（渡さない時は「タグなし」）']);
+    else if(lendId){lt=tags.find(x=>x.id===lendId);if(!lt||lt.status!=='available'||lt.owner)E.push([$('#itLendSeg'),`タグ ${lendId} は今は使えません。ほかのタグを選んでください`]);}
     if(E.length)return fieldErrs(f,E);
+    const gt=t||lt;   // 持たせるタグ（専用 または 今回だけ渡す）
     let blob=shot;if(!blob&&pre)blob=await dbGet('photos',prepKey(p.id));
     const o={id:uid(),name:p.name,pid:p.pid||'',kana:p.kana||'',sex:p.sex||'',age:ageOf(p)||'',ward:p.ward||'',adm:p.adm||'',kind:'外出',departAt:at,dueAt:due,dueAtOriginal:due,
       dest:c.dest,selfTel:p.selfTel||'',famName:p.famName||'',famRel:p.famRel||'',famTel:p.famTel||'',alone:true,compName:'',compRel:'',compTel:'',clothes:'',
-      tagId:t?t.id:'',consent:!!t,consentDate:t?cs.date:'',departNurse:nurse,note:'いつもの外出',status:'out',createdAt:at,hasPhoto:!!blob,itsumo:true,tagOwned:!!t,log:[]};
+      tagId:gt?gt.id:'',consent:!!gt,consentDate:gt?cs.date:'',departNurse:nurse,note:'いつもの外出',status:'out',createdAt:at,hasPhoto:!!blob,itsumo:true,tagOwned:!!t,log:[]};
     if(p.demo)o.demo=true;
-    addLog(o,'外出に出発（いつもの外出）'+(t?`（専用タグ ${t.id}・同意書 ${ymd(o.consentDate)} 取得）`:'（タグなし）'),nurse);
+    addLog(o,'外出に出発（いつもの外出）'+(t?`（専用タグ ${t.id}・同意書 ${ymd(o.consentDate)} 取得）`:lt?`（タグ ${lt.id} を渡す・同意書 ${ymd(o.consentDate)} 取得）`:'（タグなし）'),nurse);
     if(blob)addLog(o,shot?'服装写真を登録（出発時に撮影）':`服装写真を確認（${hm(p.itsumoPhotoAt)} に撮影したもの）`,nurse);
     o.patientId=(await upsertPatient(o,p.id)).id;
     await saveOuting(o);if(blob)await dbPut('photos',blob,o.id);
     await dropPrep(p);
-    if(t){t.status='inuse';t.outingId=o.id;await saveTag(t);}
+    if(gt){gt.status='inuse';gt.outingId=o.id;await saveTag(gt);}
     outings.push(o);settings.itsumoNurse=nurse;rememberNurse(nurse);if(shotURL)URL.revokeObjectURL(shotURL);
     lastSig='';itSig='';await tick();toast(`${p.name} さんが出発しました（帰院予定 ${hm(due)}）`);
   }}]);
   const goBtn=$('#dlgActions').lastElementChild;const label=()=>{goBtn.textContent=(shot||pre?'服装は同じ。出発':'写真なしで出発')+`（${hm(Date.now())}）`;};label();
   if(pre)getPhotoURL(prepKey(p.id)).then(u=>{const im=$('#itGoPh img');if(im&&u)im.src=u;});
+  if(canLend)$('#itLendSeg').addEventListener('click',e=>{const b=e.target.closest('[data-itlend]');if(!b)return;$$('#itLendSeg [data-itlend]').forEach(x=>x.classList.toggle('on',x===b));
+    $('#dlgForm').elements.lend.value=b.dataset.itlend;$('#itLendSeg').classList.remove('invalid');$('#dlgBody').querySelectorAll('.ferr').forEach(x=>x.remove());
+    $('#itLendShow').innerHTML=b.dataset.itlend?`<span class="it-tagbig">${esc(b.dataset.itlend)}</span> <span class="nw">（今回だけ渡す・帰院で回収）</span>`:'<span class="it-tagbig none">タグなし</span> <span class="nw">（タグを持たずに出かけます）</span>';});
   $('#dlgBody').querySelector('.it-due').addEventListener('click',e=>{const b=e.target.closest('[data-itdue]');if(!b)return;$$('#dlgBody [data-itdue]').forEach(x=>x.classList.toggle('on',x===b));$('#dlgForm').elements.due.value=b.dataset.itdue;});
   $('#itGoIn').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
     try{shot=await compress(f);if(shotURL)URL.revokeObjectURL(shotURL);shotURL=URL.createObjectURL(shot);$('#itGoPh').innerHTML=`<img src="${shotURL}" alt="服装写真">`;
