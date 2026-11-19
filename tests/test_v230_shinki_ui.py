@@ -269,8 +269,10 @@ def part_c(b, errs):
 
     # 外出：+1〜+10時間（出発 10:00 から）
     grp = lambda k: pg.locator(f'#dueQuick [data-kind="{k}"]')
-    ok(grp('外出').count() == 1 and grp('外出').is_visible() and all(not grp('外泊').nth(i).is_visible() for i in range(grp('外泊').count())))
-    ok(grp('外出').locator('.tb').all_inner_texts() == ['+1時間', '+2時間', '+3時間', '+4時間', '+6時間', '+8時間', '+10時間'])
+    # 0.5.2：外出の段は「+○時間」と「11:30・16:00（午前・午後の帰院時刻）」の2つ
+    ok(grp('外出').count() == 2 and all(grp('外出').nth(i).is_visible() for i in range(2)) and all(not grp('外泊').nth(i).is_visible() for i in range(grp('外泊').count())))
+    ok(grp('外出').nth(0).locator('.tb').all_inner_texts() == ['+1時間', '+2時間', '+3時間', '+4時間', '+6時間', '+8時間', '+10時間'])
+    ok([t.split('\n')[0] for t in grp('外出').nth(1).locator('.tb').all_inner_texts()] == ['11:30', '16:00'], grp('外出').nth(1).locator('.tb').all_inner_texts())
     for h in [1, 2, 3, 4, 6, 8, 10]:
         pg.click(f'#dueQuick [data-h="{h}"]'); pg.wait_for_timeout(30)
         want = f'{10 + h:02d}:00'
@@ -289,7 +291,7 @@ def part_c(b, errs):
 
     # 外泊：日付 × 時刻
     pg.click('#kindRadios label:has-text("外泊")'); pg.wait_for_timeout(60)
-    ok(not grp('外出').is_visible() and grp('外泊').count() == 2 and grp('外泊').nth(0).is_visible() and grp('外泊').nth(1).is_visible(), '区分で並びが切り替わらない')
+    ok(not grp('外出').nth(0).is_visible() and not grp('外出').nth(1).is_visible() and grp('外泊').count() == 2 and grp('外泊').nth(0).is_visible() and grp('外泊').nth(1).is_visible(), '区分で並びが切り替わらない')
     ok([' '.join(x.split()) for x in grp('外泊').nth(0).locator('.tb').all_inner_texts()] == ['明日 11/14(土)', '明後日 11/15(日)', '3日後 11/16(月)'],
        grp('外泊').nth(0).locator('.tb').all_inner_texts())
     ok(grp('外泊').nth(1).locator('.tb').all_inner_texts() == ['10:00', '13:00', '15:00', '17:00'])
@@ -308,7 +310,7 @@ def part_c(b, errs):
     ok(res_text(pg, '#dueRes') == '明後日 11/15(日) 17:00 出発から 2日7時間', res_text(pg, '#dueRes'))
     # 外出に戻すと +時間 の並び
     pg.click('#kindRadios label:has-text("外出")'); pg.wait_for_timeout(60)
-    ok(grp('外出').is_visible() and not grp('外泊').nth(0).is_visible())
+    ok(grp('外出').nth(0).is_visible() and grp('外出').nth(1).is_visible() and not grp('外泊').nth(0).is_visible())
 
     # 「細かく選ぶ」で選択欄を開くと、ボタンで入れた値がそのまま見える。選択欄で変えた値も結果の表示に出る
     pg.click('.tfine[data-man="dueMan"]')

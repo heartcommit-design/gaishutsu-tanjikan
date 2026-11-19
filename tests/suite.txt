@@ -43,3 +43,4 @@ test_v040_yotei_shashin
 test_v041_kiin_kakunin
 test_v042_kakunin_tag
 test_v050_kanja_touroku
+test_v052_kiin_jikoku

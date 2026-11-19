@@ -498,6 +498,8 @@ html[data-theme="dark"]{--nv:#e3eaf6;--nvtx:#0f1b30;--acc:#62cfd6;--surf:rgba(20
 .tres .plan{align-self:center;white-space:nowrap;font-size:15px;font-weight:800;letter-spacing:.04em;padding:5px 14px;border-radius:999px;background:var(--planbg);color:var(--plantx);border:1px solid var(--infoline)}
 .tbtns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .tbtns.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tbtns.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tb:disabled{opacity:.4;cursor:default}
 .tbtns+.tbtns{margin-top:8px}
 #dueQuick .tbtns+.tbtns{margin-top:8px}
 .tb{font:inherit;font-size:16px;font-weight:600;min-height:48px;padding:4px 6px;border-radius:12px;border:1px solid var(--hair2);background:var(--field);color:var(--ink);cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:var(--hl)}
@@ -845,6 +847,7 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
           <div class="tres" id="dueRes"></div>
           <div id="dueQuick">
             <div class="tbtns" data-kind="外出"><button type="button" class="tb" data-h="1">+1時間</button><button type="button" class="tb" data-h="2">+2時間</button><button type="button" class="tb" data-h="3">+3時間</button><button type="button" class="tb" data-h="4">+4時間</button><button type="button" class="tb" data-h="6">+6時間</button><button type="button" class="tb" data-h="8">+8時間</button><button type="button" class="tb" data-h="10">+10時間</button></div>
+            <div class="tbtns c2" data-kind="外出" id="dueFix"><button type="button" class="tb" data-fx="am">11:30<small>午前の帰院時刻</small></button><button type="button" class="tb" data-fx="pm">16:00<small>午後の帰院時刻</small></button></div>
             <div class="tbtns c3" data-kind="外泊" hidden><button type="button" class="tb" data-d="1">明日</button><button type="button" class="tb" data-d="2">明後日</button><button type="button" class="tb" data-d="3">3日後</button></div>
             <div class="tbtns" data-kind="外泊" id="dueTimes" hidden></div>
           </div>
@@ -2024,6 +2027,7 @@ $('#dueQuick').addEventListener('click',e=>{const b=e.target.closest('.tb');if(!
   if(b.dataset.h)tkSetDT('dueAt',round15(dep+Number(b.dataset.h)*3600000));
   else if(b.dataset.d)tkSetDT('dueAt',tkAtHM(tkAddDays(tkDayStart(dep),Number(b.dataset.d)),due?tkHmOf(due):tkHmOf(round15(dep))));
   else if(b.dataset.t)tkSetDT('dueAt',tkAtHM(due?tkDayStart(due):tkAddDays(tkDayStart(dep),1),b.dataset.t));
+  else if(b.dataset.fx){const hm=b.dataset.fx==='am'?itRule().amEnd:itRule().pmEnd;tkSetDT('dueAt',tkAtHM(tkDayStart(dep),hm));}
   updateRq();});
 function tkSetHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h;}}   // 前に入れた文字列と比べる（毎秒の描き直しで、中の部品を作り直さない）
 function tkResHTML(t,which){if(!t)return '<span class="e">まだ選んでいません</span>';
@@ -2040,6 +2044,9 @@ function paintTime(){const f=nf.elements;const dep=fromLocalInput(f.departAt.val
   $$('#dueQuick [data-h]').forEach(b=>b.classList.toggle('on',!!(dep&&due)&&round15(dep+Number(b.dataset.h)*3600000)===due));
   $$('#dueQuick [data-d]').forEach(b=>{const day=tkAddDays(tkDayStart(dep||now),Number(b.dataset.d));const r=tkRelDay(day);tkSetHTML(b,`${r||tkMdOf(day)}<small>${tkMdOf(day)}</small>`);b.classList.toggle('on',!!due&&tkDayStart(due)===day);});
   $$('#dueQuick [data-t]').forEach(b=>b.classList.toggle('on',!!due&&tkHmOf(due)===b.dataset.t));
+  // 午前・午後の帰院時刻（出発の日のその時刻）。出発より前になる時は押せない
+  $$('#dueQuick [data-fx]').forEach(b=>{const hm=b.dataset.fx==='am'?itRule().amEnd:itRule().pmEnd;const at=tkAtHM(tkDayStart(dep||now),hm);
+    tkSetHTML(b,`${hm}<small>${b.dataset.fx==='am'?'午前':'午後'}の帰院時刻</small>`);const off=at<=(dep||now);if(b.disabled!==off)b.disabled=off;b.classList.toggle('on',!!due&&due===at);});
   tkSetHTML($('#depRes'),tkResHTML(dep,'dep'));tkSetHTML($('#dueRes'),tkResHTML(due,'due'));
   $('#depCol').classList.toggle('isplan',isPlanForm());
 }
@@ -3200,7 +3207,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.5.1';
+const APP_VERSION='0.5.2';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

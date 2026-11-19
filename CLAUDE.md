@@ -68,6 +68,8 @@
     連絡先も入っている時だけ `#cSum` にたたむ。空の備考は「＋ 備考を書く」`#noteAdd` だけ。登録・取り消し（form の reset）で開いた状態に戻る。
   - 出発・帰院は時刻ボタン（`#depQuick`・`#dueQuick`。外泊の時刻・出発「明日」の時刻の候補は定数 `GAIHAKU_DUE_TIMES`・`DEP_TMR_TIMES`）。
     日付・時刻の選択欄は「細かく選ぶ」（`.tfine`）で開く `#depMan`・`#dueMan` の中にある。
+  - 0.5.2〜 外出の帰院の時刻ボタンに「11:30 午前の帰院時刻」「16:00 午後の帰院時刻」（`#dueFix [data-fx=am|pm]`。時刻は `settings.itRule` の amEnd・pmEnd）。
+    出発の日のその時刻を入れる。出発より前になる時は押せない（disabled）。
 - テストで操作する時の注意：
   - 呼び出しの後は患者欄がたたまれて病棟などが押せない。先に `#pOpen`（変更）を押す。連絡先は `#cOpen`。備考は `#noteAdd` を押してから入れる。
   - 選択欄（`.tp-d`・`.tp-t`）を操作する時は、先に `.tfine[data-man="depMan"]`／`dueMan` で開く。
