@@ -287,6 +287,14 @@ video{width:100%;border-radius:8px;background:#000}
 .notice .msg{flex:1;min-width:200px}
 #banner.urgent{animation:flash2 .5s steps(2) infinite}
 @keyframes flash2{0%,100%{background:#ff1a1a}50%{background:#4a0000}}
+.rc2{display:grid;grid-template-columns:max-content max-content minmax(0,1fr);gap:8px 12px;align-items:center;margin:6px 0 10px}
+.rc2 .rl{font-weight:700;color:var(--ink);white-space:nowrap}
+.rc2 .rcseg .btn{white-space:nowrap;padding:8px 14px}
+.rc2 .rcseg [data-rcv=ok].on{background:var(--okbg);color:var(--oktx);border-color:var(--okline)}
+.rc2 .rcseg [data-rcv=ng].on{background:var(--bad);color:#fff;border-color:var(--bad)}
+.rcx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}.rcx input{flex:1 1 160px;min-width:0}
+.rcpick{white-space:nowrap}.rcpick.on{background:var(--badbg);color:var(--badtx);border-color:var(--bad);font-weight:800}
+@media (max-width:600px){.rc2{grid-template-columns:minmax(0,1fr)}.rc2 .rl{margin-top:6px}}
 .rc{display:grid;grid-template-columns:max-content max-content minmax(0,1fr);gap:8px 10px;align-items:center;margin:6px 0 10px}
 .rc .rl{font-weight:700;color:var(--ink)}
 .rc label{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:16px;margin:0}
@@ -1509,7 +1517,7 @@ async function renderPlans(){
       <div class="who"><div class="name">${esc(shownName(o))}</div><div class="sub">${esc([wardText(o),o.kind].filter(Boolean).join('・'))}　${o.hasPhoto?`<span class="phst on">✓ 服装写真${o.photoAt?' '+hhmm(o.photoAt):''}</span>`:'<span class="phst">服装写真なし</span>'}</div></div>
       <div class="times"><span>出発予定 <b>${fmt(o.departAt)}</b></span><span>帰院予定 <b>${fmt(o.dueAt)}</b></span></div>
       <div class="statebox"><span class="lbl lbl-planned">${esc(stLabel(o,'planned'))}</span><div class="count" data-pcount="${o.id}">${planCountText(o,now)}</div></div>
-      <div class="acts"><button class="btn" data-pact="snap" aria-label="${o.hasPhoto?'服装写真を撮り直す':'服装写真を撮る'}">📷<span class="lt-l"> ${o.hasPhoto?'撮り直す':'写真を撮る'}</span><span class="lt-s"> 写真</span></button><button class="btn ok" data-pact="go">出発（GO）</button><button class="btn" data-pact="toggle" aria-expanded="${open}">${open?'閉じる':'詳細'}</button></div></div>
+      <div class="acts"><button class="btn" data-pact="snap" aria-label="服装写真を撮る">📷<span class="lt-l"> 写真を撮る</span><span class="lt-s"> 写真</span></button><button class="btn ok" data-pact="go">出発（GO）</button><button class="btn" data-pact="toggle" aria-expanded="${open}">${open?'閉じる':'詳細'}</button></div></div>
      ${open?`<div class="prbody"><div class="body">${urls[o.id]?`<img class="thumb" src="${urls[o.id]}" alt="服装写真" data-pact="photo">`:(mk&&o.hasPhoto?'<div class="nophoto">写真あり<br>（表示で確認）</div>':'<div class="nophoto">写真なし<br>（出発時でも可）</div>')}
      <dl class="info"><dt>出発予定</dt><dd>${fmt(o.departAt)}</dd><dt>帰院予定</dt><dd><b>${fmt(o.dueAt)}</b>（出発が前後しても変わりません）</dd><dt>区分</dt><dd>${esc(o.kind)}</dd>
      <dt>行き先</dt><dd>${esc(o.dest)||'—'}</dd><dt>同行</dt><dd>${o.alone?'単独':(mk?'同行あり':esc(o.compName)+(o.compRel?'（'+esc(o.compRel)+'）':''))}</dd>
@@ -1688,14 +1696,33 @@ document.addEventListener('click',e=>{const mb=e.target.closest('[data-nmore]');
 async function doAck(o){o.ackAt=Date.now();addLog(o,'アラームを確認（対応開始）');await saveOuting(o);lastSig='';tick();toast(`アラーム音を止めました。${settings.realertMin}分後に未解決なら再度鳴ります。`);}
 
 const RC_ITEMS=[['belong','持ち物確認'],['state','帰院時の様子'],['med','服薬'],['mental','精神状態']];
-function rcText(o){if(!o.rc)return '';const parts=RC_ITEMS.map(([k,l])=>{const x=o.rc[k]||{};if(!x.ok&&!x.memo)return '';return l+(x.ok?'✓':'')+(x.memo?'：'+x.memo:'');}).filter(Boolean);if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
+// 0.4.1：帰院時の確認は項目ごとに「問題なし／問題あり」（初めは問題なし）。問題ありの時は、すぐ選べる言葉（RC_PICKS）とメモ
+const RC_PICKS={belong:['禁止物持ち込みあり'],state:[],med:['服薬忘れあり'],mental:['不穏']};
+function rcBlockHTML(){return `<div class="rc2">${RC_ITEMS.map(([k,l])=>`<span class="rl">${l}</span>
+  <div class="seg rcseg" data-rck="${k}"><button type="button" class="btn on" data-rcv="ok">問題なし</button><button type="button" class="btn" data-rcv="ng">問題あり</button></div>
+  <div class="rcx" data-rcx="${k}">${RC_PICKS[k].map(t=>`<button type="button" class="nchip rcpick" data-rcpick="${esc(t)}">${esc(t)}</button>`).join('')}<input name="rcm_${k}" placeholder="${RC_PICKS[k].length?'ほかにあれば（任意）':'どんな様子か（任意）'}" hidden></div>
+  <input type="hidden" name="rcv_${k}" value="ok"><input type="hidden" name="rcp_${k}" value="">`).join('')}</div>`;}
+function rcWire(root){
+  const setV=(k,v)=>{root.querySelector(`[name=rcv_${k}]`).value=v;root.querySelectorAll(`[data-rck=${k}] [data-rcv]`).forEach(b=>b.classList.toggle('on',b.dataset.rcv===v));
+    const x=root.querySelector(`[data-rcx=${k}]`);x.querySelector(`[name=rcm_${k}]`).hidden=v!=='ng';x.closest('.rc2').querySelector(`[data-rck=${k}]`).classList.toggle('ng',v==='ng');
+    if(v==='ok'){x.querySelectorAll('.rcpick').forEach(c=>c.classList.remove('on'));root.querySelector(`[name=rcp_${k}]`).value='';}};
+  root.querySelectorAll('.rcseg').forEach(sg=>sg.addEventListener('click',e=>{const b=e.target.closest('[data-rcv]');if(b)setV(sg.dataset.rck,b.dataset.rcv);}));
+  root.querySelectorAll('.rcx').forEach(x=>x.addEventListener('click',e=>{const c=e.target.closest('.rcpick');if(!c)return;const k=x.dataset.rcx;c.classList.toggle('on');
+    const on=[...x.querySelectorAll('.rcpick.on')].map(y=>y.dataset.rcpick);root.querySelector(`[name=rcp_${k}]`).value=on.join('、');if(on.length)setV(k,'ng');}));
+}
+function rcRead(f){const rc={v2:true};for(const [k] of RC_ITEMS){const ng=val(f,'rcv_'+k)==='ng';
+  rc[k]={ok:!ng,ng,picks:ng?(val(f,'rcp_'+k)||'').split('、').filter(Boolean):[],memo:ng?val(f,'rcm_'+k):''};}return rc;}
+function rcText(o){if(!o.rc)return '';
+  if(o.rc.v2){const ng=RC_ITEMS.filter(([k])=>o.rc[k]&&o.rc[k].ng).map(([k,l])=>{const x=o.rc[k];const d=[...(x.picks||[]),x.memo].filter(Boolean).join('・');return l+'：問題あり'+(d?'（'+d+'）':'');});
+    const parts=ng.length?[...ng,ng.length<RC_ITEMS.length?'ほかは問題なし':''].filter(Boolean):['すべて問題なし'];if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
+  const parts=RC_ITEMS.map(([k,l])=>{const x=o.rc[k]||{};if(!x.ok&&!x.memo)return '';return l+(x.ok?'✓':'')+(x.memo?'：'+x.memo:'');}).filter(Boolean);if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
 function dlgReturn(o){
   openDlg(`帰院登録：${o.name}`,`
     <label>帰院時刻<input type="datetime-local" name="at" value="${toLocalInput(Date.now())}"></label>
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList"></label>
     ${o.tagId?(tags.find(x=>x.id===o.tagId&&x.owner&&x.owner===o.patientId)?`<p class="hint">専用タグ <b>${esc(o.tagId)}</b> は本人が持ったままにします（回収しません）。</p>`:`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`):''}
-    <h3 style="font-size:17px;margin:12px 0 2px">帰院時の確認（任意）</h3>
-    <div class="rc">${RC_ITEMS.map(([k,l])=>`<span class="rl">${l}</span><label><input type="checkbox" name="rc_${k}">確認済</label><input name="rcm_${k}" placeholder="メモ（任意）">`).join('')}</div>
+    <h3 style="font-size:17px;margin:12px 0 2px">帰院時の確認<span class="hint" style="font-weight:500;margin-left:8px">初めは「問題なし」。何かあれば「問題あり」</span></h3>
+    ${rcBlockHTML()}
     <label>その他特記事項<textarea name="rc_other" placeholder="任意"></textarea></label>
     <label>メモ（遅れた理由など）<input name="memo"></label>
     ${o.hasPhoto?'<p class="warnbox">帰院登録をすると服装写真は削除されます（元に戻せません）。</p>':''}`,
@@ -1707,12 +1734,13 @@ function dlgReturn(o){
     if(!nurse)E.push(['nurse','確認した看護師を入力してください']);
     if(E.length)return fieldErrs(f,E);
     o.status='returned';o.returnedAt=at;o.returnNurse=nurse;
-    o.rc={other:val(f,'rc_other')};RC_ITEMS.forEach(([k])=>{o.rc[k]={ok:!!f.elements['rc_'+k].checked,memo:val(f,'rcm_'+k)};});
+    o.rc={...rcRead(f),other:val(f,'rc_other')};o.rcNg=RC_ITEMS.some(([k])=>o.rc[k].ng);
     addLog(o,'帰院'+(val(f,'memo')?'：'+val(f,'memo'):''),nurse);if(rcText(o))addLog(o,'帰院時確認：'+rcText(o),nurse);rememberNurse(nurse);
     if(o.hasPhoto){await dbDel('photos',o.id);dropPhotoURL(o.id);o.hasPhoto=false;o.photoDeletedAt=Date.now();addLog(o,'服装写真を削除（自動）');}
     if(o.tagId)await itTagOnReturn(o,!!f.elements.tagBack?.checked,nurse);
-    await saveOuting(o);lastSig='';tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':''));
+    await saveOuting(o);lastSig='';tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':'')+(o.rcNg?'（帰院時の確認：問題あり）':''));
   }}]);
+  rcWire($('#dlgBody'));
 }
 
 function dlgLost(o){
@@ -2827,7 +2855,7 @@ function itTileHTML(p,now){
   const phKey=o&&o.hasPhoto?o.id:(hasPrep(p)?prepKey(p.id):'');
   const ph=phKey?`<div class="it-ph"><img data-itph="${esc(phKey)}" alt="服装写真"></div>`:'<div class="it-noph">写真<br>まだ</div>';
   if(itPrepMode){
-    if(hasPrep(p))st=`<span class="it-okt">✓ 写真 ${hm(p.itsumoPhotoAt)}</span><button type="button" class="btn it-b" data-itsnap="${p.id}">撮り直す</button>`;
+    if(hasPrep(p))st=`<span class="it-okt">✓ 写真 ${hm(p.itsumoPhotoAt)}</span><button type="button" class="btn it-b" data-itsnap="${p.id}">📷 写真を撮る</button>`;
     else if(o)st=`<span class="it-sub">外出中</span><span></span>`;
     else st=`<span class="it-warnt">写真まだ</span><button type="button" class="btn pri it-b" data-itsnap="${p.id}">📷 撮る</button>`;
   }else if(o){const s=stateOf(o,now);
@@ -2933,16 +2961,20 @@ function dlgItBack(o){
     <div class="it-kv">${own?itTagRow(t,false):o.tagId?`<b>タグ</b><span><span class="it-tagbig">${esc(o.tagId)}</span>（貸し出したタグ。下で回収を確かめます）</span>`:itTagRow(null,false)}<b>出発</b><span>${hm(o.departAt)}（${esc(o.dest||'')}）</span><b>帰院予定</b><span>${hm(o.dueAt)}</span><b>帰院</b><span>${hm(Date.now())}（今）</span></div>
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
     ${o.tagId&&!own?`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`:''}
+    <div class="it-lbl">帰院時の確認<span class="hint" style="font-weight:500;margin-left:8px">初めは「問題なし」。何かあれば「問題あり」</span></div>
+    ${rcBlockHTML()}
     ${o.hasPhoto?'<p class="warnbox">帰院を登録すると服装写真は消えます（元に戻せません）。</p>':''}
-    <p style="margin:6px 0 0"><button type="button" class="linkbtn" id="itBackMore">帰院時の確認（持ち物・様子など）も書く</button></p>`,
+    <p style="margin:6px 0 0"><button type="button" class="linkbtn" id="itBackMore">帰院時刻を変える・特記事項を書く</button></p>`,
   [{label:'やめる'},{label:'帰院',cls:'ok big',onClick:async f=>{
     const nurse=val(f,'nurse');if(!nurse)return fieldErrs(f,[['nurse','確認した看護師を選んでください']]);
-    const at=Date.now();o.status='returned';o.returnedAt=at;o.returnNurse=nurse;addLog(o,'帰院（いつもの外出）',nurse);rememberNurse(nurse);settings.itsumoNurse=nurse;saveSettings();
+    const at=Date.now();o.status='returned';o.returnedAt=at;o.returnNurse=nurse;o.rc=rcRead(f);o.rcNg=RC_ITEMS.some(([k])=>o.rc[k].ng);
+    addLog(o,'帰院（いつもの外出）',nurse);addLog(o,'帰院時確認：'+rcText(o),nurse);rememberNurse(nurse);settings.itsumoNurse=nurse;saveSettings();
     if(o.hasPhoto){await dbDel('photos',o.id);dropPhotoURL(o.id);o.hasPhoto=false;o.photoDeletedAt=Date.now();addLog(o,'服装写真を削除（自動）');}
     if(o.tagId)await itTagOnReturn(o,own?true:!!f.elements.tagBack?.checked,nurse);
-    await saveOuting(o);lastSig='';itSig='';await tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':''));
+    await saveOuting(o);lastSig='';itSig='';await tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':'')+(o.rcNg?'（帰院時の確認：問題あり）':''));
   }}]);
   $('#dlgActions').lastElementChild.textContent=`帰院（${hm(Date.now())}）`;
+  rcWire($('#dlgBody'));
   $('#itBackMore').addEventListener('click',()=>dlgReturn(o));
 }
 // 帰院の時のタグ：専用タグは本人が持ったまま（貸出中を解き、回収の扱いにしない）。それ以外は回収したかどうか
@@ -3101,7 +3133,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.4.0';
+const APP_VERSION='0.4.1';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

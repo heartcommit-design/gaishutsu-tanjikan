@@ -1,5 +1,5 @@
 """0.4.0 予定の人の服装写真を、出発の前に撮っておく：assert で確かめる。
-(a) 予定の行に「📷 写真を撮る」（写真がある行は「📷 撮り直す」）と、写真の状態（「服装写真なし」／「✓ 服装写真 hh:mm」）。
+(a) 予定の行に「📷 写真を撮る」（0.4.1 から写真がある行も同じ言葉）と、写真の状態（「服装写真なし」／「✓ 服装写真 hh:mm」）。
 (b) 「写真を撮る」で撮ると、その予定の写真として保存（hasPhoto・撮った時刻・記録）。行が「✓ 服装写真 09:30」に変わる。
 (c) 出発（GO）の画面：撮ってある写真そのものを出し、「今の服装は、この写真（09:30 撮影）と同じですか」と「服装が違う（撮り直す）」。
 (d) 写真がない予定の GO：「服装の写真はまだありません」と「📷 撮る」。
@@ -43,7 +43,7 @@ with sync_playwright() as p:
     row = f'#planList .card[data-id="{ids["no"]}"]'
     # (a)
     ok('服装写真なし' in pg.inner_text(row) and pg.inner_text(f'{row} [data-pact=snap]').strip() == '📷 写真を撮る', pg.inner_text(row))
-    ok(pg.inner_text(f'#planList .card[data-id="{ids["has"]}"] [data-pact=snap]').strip() == '📷 撮り直す')
+    ok(pg.inner_text(f'#planList .card[data-id="{ids["has"]}"] [data-pact=snap]').strip() == '📷 写真を撮る')  # 0.4.1：写真があっても「写真を撮る」
     pg.screenshot(path=os.path.join(OUT, 'v040_1_yotei.png'))
     # (d) 写真なしの GO
     pg.click(f'{row} [data-pact=go]'); pg.wait_for_timeout(400)
@@ -58,7 +58,7 @@ with sync_playwright() as p:
     r = pg.evaluate("id=>{const o=outings.find(x=>x.id===id);return {at:new Date(o.photoAt).getHours()*60+new Date(o.photoAt).getMinutes(),log:o.log.map(l=>l.text).join('|')}}", ids['no'])
     ok(r['at'] == 9 * 60 + 30 and '服装写真を登録（出発の前）' in r['log'], r)
     ok(ids['no'] in pg.evaluate("dbKeys('photos')"))
-    ok('✓ 服装写真 09:30' in pg.inner_text(row) and pg.inner_text(f'{row} [data-pact=snap]').strip() == '📷 撮り直す', pg.inner_text(row))
+    ok('✓ 服装写真 09:30' in pg.inner_text(row) and pg.inner_text(f'{row} [data-pact=snap]').strip() == '📷 写真を撮る', pg.inner_text(row))
     size1 = pg.evaluate("id=>dbGet('photos',id).then(b=>b.size)", ids['no'])
     # (c) GO の画面に写真そのもの
     pg.clock.fast_forward(5 * 60000); pg.wait_for_timeout(1200)

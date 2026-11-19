@@ -22,7 +22,8 @@ async def main():
         await c.locator('[data-act=return]').click(); await pg.wait_for_timeout(300)
         print('nurse chips in return dlg:', await pg.locator('#dlgBody .nchip').count())
         await pg.locator('#dlgBody .nchip').first.click()
-        await pg.check('#dlgBody input[name=rc_belong]'); await pg.fill('#dlgBody input[name=rcm_state]','落ち着いている'); await pg.check('#dlgBody input[name=rc_med]'); await pg.fill('#dlgBody textarea[name=rc_other]','家族より土産あり')
+        # 0.4.1：帰院時の確認は「問題なし／問題あり」（初めは問題なし）。精神状態だけ「不穏」を選び、メモを書く
+        await pg.click('#dlgBody [data-rcx=mental] [data-rcpick="不穏"]'); await pg.fill('#dlgBody input[name=rcm_mental]','声かけで落ち着く'); await pg.fill('#dlgBody textarea[name=rc_other]','家族より土産あり')
         await pg.click('#dlgActions button.ok'); await pg.wait_for_timeout(700)
         print('rcText:', await pg.evaluate("rcText(outings[0])"))
         # --- 2nd registration: recall, consent ok automatically
