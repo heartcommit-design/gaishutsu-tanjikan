@@ -2928,7 +2928,7 @@ async function renderItsumo(force){
   const list=itList();const outN=list.filter(p=>itActive(p)).length,overN=list.filter(p=>{const o=itActive(p);return o&&['overdue','search'].includes(stateOf(o,now));}).length;
   const prepN=list.filter(hasPrep).length;
   $('#itTitle').textContent=itPrepMode?'📷 写真の準備':'いつもの外出';
-  $('#itHelp').textContent=itPrepMode?'混む前に一人ずつ撮っておきます。出発の時に看護師が服装を見比べます。写真は帰院で消え、使わなかった写真も0時に消えます。'
+  $('#itHelp').textContent=itPrepMode?'混む前に一人ずつ撮っておきます。その日の出発では、この写真と今の服装を看護師が見比べます。撮っておいた写真は0時に消えます（外出の記録の写真は帰院で消えます）。'
     :'「出発」を押し、服装が写真と同じか確かめて出発します。戻ったら「帰院」。行き先やタグを変える時は、名前の下の「変更」。';
   $('#itPrepBtn').textContent=itPrepMode?'準備を終える':'📷 写真の準備';$('#itPrepBtn').classList.toggle('pri',itPrepMode);$('#itMembers').hidden=itPrepMode;$('#itRuleBtn').hidden=itPrepMode;
   $('#itSum').innerHTML=itPrepMode?`<span class="g">写真あり ${prepN}人</span><span class="o">写真まだ ${list.length-prepN-list.filter(p=>!hasPrep(p)&&itActive(p)).length}人</span>`
@@ -2945,7 +2945,7 @@ $('#itGrid').addEventListener('click',e=>{const g=e.target.closest('[data-itgo]'
   else if(g)dlgItGo(patients.find(p=>p.id===g.dataset.itgo));
   else if(b){const o=outings.find(x=>x.id===b.dataset.itback);if(o)dlgItBack(o);}
   else if(s){itPhotoFor=s.dataset.itsnap;$('#itPhotoIn').click();}
-  else{const ph=e.target.closest('.it-ph img');if(ph&&ph.src)openDlg('服装写真',`<img src="${ph.src}" style="width:100%;border-radius:8px" alt="服装写真"><p class="hint">帰院で消えます。使わなかった写真も0時に消えます。</p>`,[{label:'閉じる'}]);}});
+  else{const ph=e.target.closest('.it-ph img');if(ph&&ph.src)openDlg('服装写真',`<img src="${ph.src}" style="width:100%;border-radius:8px" alt="服装写真"><p class="hint">撮っておいた写真は0時に消えます。外出の記録の写真は帰院で消えます。</p>`,[{label:'閉じる'}]);}});
 $('#itPhotoIn').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';const p=patients.find(x=>x.id===itPhotoFor);itPhotoFor=null;if(!f||!p)return;
   try{const b=await compress(f);await dbPut('photos',b,prepKey(p.id));dropPhotoURL(prepKey(p.id));p.itsumoPhotoAt=Date.now();await dbPut('patients',p);prepSet.add(p.id);prepDay=toDateInput(Date.now());
     renderItsumo(true);toast(`${p.name} さんの服装写真を撮りました（0時に消えます）`,2500);}catch(err){toast('写真を読み込めませんでした');}});
@@ -2994,7 +2994,9 @@ function dlgItGo(p){
     if(blob)addLog(o,shot?'服装写真を登録（出発時に撮影）':`服装写真を確認（${hm(p.itsumoPhotoAt)} に撮影したもの）`,nurse);
     o.patientId=(await upsertPatient(o,p.id)).id;
     await saveOuting(o);if(blob)await dbPut('photos',blob,o.id);
-    await dropPrep(p);
+    // 0.5.1（先生の決定 2026-11-19）：撮っておいた写真は帰院の後も0時まで残し、その日の次の出発で見比べる。
+    // 出発の画面で撮り直した時は、その写真を撮っておいた写真として置き換える（次の出発は新しい服装と見比べる）。外出の記録の写真は帰院で消える。
+    if(shot){await dbPut('photos',shot,prepKey(p.id));dropPhotoURL(prepKey(p.id));p.itsumoPhotoAt=at;prepSet.add(p.id);prepDay=toDateInput(at);await dbPut('patients',p);}
     if(gt){gt.status='inuse';gt.outingId=o.id;await saveTag(gt);}
     outings.push(o);settings.itsumoNurse=nurse;rememberNurse(nurse);if(shotURL)URL.revokeObjectURL(shotURL);
     lastSig='';itSig='';await tick();toast(`${p.name} さんが出発しました（帰院予定 ${hm(due)}）`);
@@ -3019,7 +3021,7 @@ function dlgItBack(o){
     ${tagRetHTML(o)}
     <div class="it-lbl">帰院時の確認<span class="hint" style="font-weight:500;margin-left:8px">初めは「問題なし」。何かあれば「問題あり」</span></div>
     ${rcBlockHTML()}
-    ${o.hasPhoto?'<p class="warnbox">帰院を登録すると服装写真は消えます（元に戻せません）。</p>':''}
+    ${o.hasPhoto?`<p class="warnbox">帰院を登録すると、この外出の記録の服装写真は消えます（元に戻せません）。${hasPrep(patients.find(x=>x.id===o.patientId))?'撮っておいた写真は、その日の次の出発のため0時まで残ります。':''}</p>`:''}
     <p style="margin:6px 0 0"><button type="button" class="linkbtn" id="itBackMore">帰院時刻を変える・特記事項を書く</button></p>`,
   [{label:'やめる'},{label:'帰院',cls:'ok big',onClick:async f=>{
     const nurse=val(f,'nurse');if(!nurse)return fieldErrs(f,[['nurse','確認した看護師を選んでください']]);
@@ -3198,7 +3200,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.5.0';
+const APP_VERSION='0.5.1';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

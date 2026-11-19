@@ -3,7 +3,7 @@
 (b) タグ管理に「〇〇さん 専用」。専用タグは、ほかの人の新規登録のタグのボタンに出ない。
 (c) 台帳の「いつもの外出」の設定：同意書の取得日がない人には専用タグを持たせられない（欄のそばに知らせ）。タグなしなら足せる。
 (d) 写真の準備：撮ると「✓ 写真」になる。
-(e) 出発：帰院予定の初めの候補は 11:30（午前の帰院時刻。0.3.0 から病棟の決まりで選ぶ）。看護師名が空だと出発できない。撮っておいた写真はその外出の写真に移り、撮っておいた分は消える。専用タグは貸出中に。
+(e) 出発（0.5.1〜：撮っておいた写真は出発・帰院の後も0時まで残る）：帰院予定の初めの候補は 11:30（午前の帰院時刻。0.3.0 から病棟の決まりで選ぶ）。看護師名が空だと出発できない。撮っておいた写真はその外出の写真に移り、撮っておいた分は消える。専用タグは貸出中に。
     写真がない人は出発の画面で撮れる（ボタンの文字が「写真なしで出発」→「服装は同じ。出発」に変わる）。
 (f) 帰院予定を過ぎると、その人のカードが赤くなり、上の帯（アラーム）が出る。
 (g) 帰院：看護師名を選ぶ（空だと登録できない）。写真は消え、専用タグは回収せず本人が所持（利用可・専用のまま）。くわしい帰院登録でも回収の欄は出ない。
@@ -133,7 +133,7 @@ with sync_playwright() as p:
     o = pg.evaluate("id=>{const o=outings.find(x=>x.patientId===id&&x.status==='out');return o&&{id:o.id,due:new Date(o.dueAt).getHours()*60+new Date(o.dueAt).getMinutes(),tag:o.tagId,ph:o.hasPhoto,it:o.itsumo,n:o.departNurse}}", a)
     ok(o and o['it'] and o['due'] == 11 * 60 + 30 and o['tag'] == 'T-13' and o['ph'] and o['n'] == '(デモ) 看護師 見本', o)
     keys = photo_keys(pg)
-    ok(o['id'] in keys and f'prep:{a}' not in keys, keys)
+    ok(o['id'] in keys and f'prep:{a}' in keys, keys)   # 0.5.1：撮っておいた写真は残る
     ok(pg.evaluate("tags.find(t=>t.id==='T-13').status") == 'inuse')
     ok(pg.evaluate("settings.itsumoNurse") == '(デモ) 看護師 見本')
     # 写真がない人：出発の画面で撮る
@@ -146,6 +146,8 @@ with sync_playwright() as p:
     dlg_click(pg, '出発')
     o2 = pg.evaluate("id=>{const o=outings.find(x=>x.patientId===id&&x.status==='out');return o&&{id:o.id,ph:o.hasPhoto}}", c2)
     ok(o2 and o2['ph'] and o2['id'] in photo_keys(pg), o2)
+    # 0.5.1：出発の画面で撮った写真は、撮っておいた写真にもなる（その日の次の出発で見比べる）
+    ok(f'prep:{c2}' in photo_keys(pg) and pg.evaluate("id=>!!patients.find(p=>p.id===id).itsumoPhotoAt", c2))
     pg.wait_for_timeout(1200)
     ok(pg.locator('#itGrid .it-t.out').count() == 2, pg.locator('#itGrid .it-t.out').count())
     # すでに外出中の人は「出発」が出ない
@@ -170,10 +172,16 @@ with sync_playwright() as p:
     ok(r['st'] == 'returned' and not r['ph'] and r['del'] and r['kept'] and r['n'] == '(デモ) 看護師 見本', r)
     ok('専用タグ T-13 は本人が持ったまま' in r['log'], r['log'])
     ok(o['id'] not in photo_keys(pg))
+    ok(f'prep:{a}' in photo_keys(pg))   # 0.5.1：帰院の後も撮っておいた写真は0時まで残る
     t11 = pg.evaluate("tags.find(t=>t.id==='T-13')")
     ok(t11['status'] == 'available' and t11['owner'] == a and not t11['outingId'], t11)
     pg.wait_for_timeout(1200)
     ok('今日' in pg.inner_text(f'[data-itp="{a}"]') and pg.locator(f'[data-itgo="{a}"]').count() == 1)
+    ok(pg.locator(f'[data-itp="{a}"] .it-ph img').count() == 1)
+    # 0.5.1：同じ日の2回目の出発では、同じ写真と見比べる
+    pg.click(f'[data-itgo="{a}"]'); pg.wait_for_timeout(500)
+    ok(pg.locator('#itGoPh img').count() == 1 and '同じですか' in pg.inner_text('#itGoQ'), pg.inner_text('#itGoQ'))
+    pg.locator('#dlgActions button', has_text='やめる').click(); pg.wait_for_timeout(300)
     # くわしい帰院登録（ふつうの帰院の画面）：専用タグの回収の欄は出ない
     pg.click(f'[data-itback="{o2["id"]}"]'); pg.wait_for_timeout(400)
     pg.click('#itBackMore'); pg.wait_for_timeout(400)
