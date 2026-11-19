@@ -727,6 +727,7 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
 .it-due .btn,.it-lend .btn{white-space:nowrap}.it-lend .btn{min-width:72px}
 .it-lend.invalid{outline:2px solid var(--bad);outline-offset:3px;border-radius:12px}
 .it-pick{margin-top:8px;max-height:52vh;overflow:auto}
+.it-pnew{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 10px}
 .it-prow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line2)}.it-prow .sp{flex:1}.it-prow b{white-space:nowrap}
 @media (max-width:1100px) and (min-width:700px){nav button{font-size:15px;padding:0 9px}nav .cnt{margin-left:3px;min-width:22px;padding:0 5px}}
 .it-m2{display:flex;align-items:center;gap:8px;overflow:visible}.it-m2>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -906,6 +907,7 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
         <label>確認した看護師<span class="req">必須</span><input name="departNurse" list="nurseList" required></label>
         <div id="noteCell"><button type="button" class="btn" id="noteAdd">＋ 備考を書く（任意）</button><label id="noteLab">備考<input name="note"></label></div>
       </div>
+      <label class="consent" id="itsumoRegLab" style="margin:10px 0 0"><input type="checkbox" name="itsumoReg">この人を「いつもの外出」にも入れる<span class="hint" style="margin-left:6px">（次から名前のボタンで出発できます）</span></label>
     </fieldset>
     <div class="errbox" id="formErr" role="alert" hidden></div>
     <div class="quick" style="margin-top:0;gap:10px"><button type="button" class="btn pri big" id="submitBtn">この内容で外出を登録</button><button type="button" class="btn big" id="formBack" hidden>変更せずに戻る</button></div>
@@ -996,9 +998,9 @@ html{scroll-padding-top:var(--stickt,0px);scroll-padding-bottom:var(--stickb,0px
   <h2>患者台帳</h2>
   <div class="toolbar"><div class="seg" id="ptSeg"><button type="button" class="btn on" data-pts="in">入院中（<span id="ptNIn">0</span>人）</button><button type="button" class="btn" data-pts="discharged">退院（<span id="ptNOut">0</span>人）</button></div>
     <input id="ptQ" placeholder="氏名・ふりがな・IDで絞り込み" style="min-width:200px"><span class="sp"></span>
-    <span class="hint" id="ptCount"></span><button type="button" class="btn pri" id="ptCsvBtn">CSVから取り込む</button><button type="button" class="btn" id="ptCsvTpl">ひな形CSV</button>
+    <span class="hint" id="ptCount"></span><button type="button" class="btn pri" id="ptNewBtn">＋ 新しい患者を登録</button><button type="button" class="btn" id="ptCsvBtn">CSVから取り込む</button><button type="button" class="btn" id="ptCsvTpl">ひな形CSV</button>
     <input type="file" id="ptCsvFile" accept=".csv,text/csv,text/plain" hidden></div>
-  <p class="hint" style="margin-top:0">外出を一度登録した患者は自動でここに入り、次回は「＋ 新規登録」で呼び出せます。院内の患者一覧（Excel）を<b>CSVで保存して取り込む</b>こともできます（氏名・ふりがな・ID・性別・年齢・家族氏名・続柄・連絡先など）。同じ患者IDの人は上書きされます。退院した患者は「退院」を押すと「退院」の一覧に移ります（外出の記録は残ります）。病棟の変更や連絡先の修正は「修正」で行います。</p>
+  <p class="hint" style="margin-top:0">外出を一度登録した患者は自動でここに入り、次回は「＋ 新規登録」で呼び出せます。「<b>＋ 新しい患者を登録</b>」で1人ずつ足すこともできます。院内の患者一覧（Excel）を<b>CSVで保存して取り込む</b>こともできます（氏名・ふりがな・ID・性別・年齢・家族氏名・続柄・連絡先など）。同じ患者IDの人は上書きされます。退院した患者は「退院」を押すと「退院」の一覧に移ります（外出の記録は残ります）。病棟の変更や連絡先の修正は「修正」で行います。</p>
   <div class="xlwrap"><table class="xl" id="ptTable"></table></div>
 </section>
 
@@ -2173,6 +2175,8 @@ async function registerOuting(){
     clothes:val(f,'clothes'),tagId,consent:!!tagId,consentDate:tagId?(cs.st==='ok'?cs.date:val(f,'consentDate')):'',departNurse:nurse,note:val(f,'note'),status:plan?'planned':'out',createdAt:now,hasPhoto:!!pendingPhoto,log:[]};
   const planSrc=nf.dataset.planId&&outings.find(x=>x.id===nf.dataset.planId);if(planSrc){o.log=[...(planSrc.log||[])];if(!plan){o.departAtPlanned=planSrc.departAt;o.planNurse=planSrc.departNurse;}}
   const pt=await upsertPatient(o,nf.dataset.patientId);o.patientId=pt.id;
+  const itReg=!!f.elements.itsumoReg?.checked&&!itOn(pt);   // 0.5.0：新規登録から「いつもの外出」に入れる
+  if(itReg){pt.itsumo={on:true,dest:o.dest||IT_DEF.dest};ptLog(pt,`いつもの外出に登録（新規登録から・行き先 ${pt.itsumo.dest}）`,nurse);await dbPut('patients',pt);itSig='';}
   if(tagId&&cs.st==='none'){pt.consentDate=o.consentDate;pt.consentLog=[...(pt.consentLog||[]),{at:Date.now(),text:`同意書取得日を ${ymd(o.consentDate)} に登録（外出登録時）`,by:nurse}];await dbPut('patients',pt);}
   if(plan&&planSrc)addLog(o,`${o.kind}の予定を修正（出発予定 ${fmt(planSrc.departAt)}→${fmt(departAt)}、帰院予定 ${fmt(dueAt)}）`+(tagId?`（タグ ${tagId} を予約）`:'（タグは出発時に選ぶ）'),nurse);
   else if(plan)addLog(o,`${o.kind}の予定を登録（出発予定 ${fmt(departAt)}）`+(tagId?`（タグ ${tagId} を予約）`:''),nurse);else addLog(o,`${o.kind}に出発`+(tagId?`（タグ ${tagId} 貸出・同意書 ${ymd(o.consentDate)} 取得）`:'（タグなし）'),nurse);
@@ -2184,7 +2188,7 @@ async function registerOuting(){
   if(tagId){const t=tags.find(x=>x.id===tagId);if(t){t.status=plan?'reserved':'inuse';t.outingId=o.id;await saveTag(t);}}
   outings.push(o);rememberNurse(nurse);
   f.reset();pendingPhoto=null;$('#compBox').hidden=true;f.elements.departAt.value='';delete nf.dataset.patientId;delete nf.dataset.planId;delete nf.dataset.planMode;$('#formBack').hidden=true;$('#pLoaded').hidden=true;$('#pSearch').value='';updateConsent();attachNurseChips(nf);
-  toast(plan?(planSrc?`${name} さんの${o.kind}予定を更新しました（「予定」タブ）`:`${name} さんの${o.kind}予定を登録しました（「予定」タブ）`):`${name} さんの${o.kind}を登録しました`);lastSig='';showTab(plan?'plan':'active');tick();
+  toast((plan?(planSrc?`${name} さんの${o.kind}予定を更新しました（「予定」タブ）`:`${name} さんの${o.kind}予定を登録しました（「予定」タブ）`):`${name} さんの${o.kind}を登録しました`)+(itReg?'。「いつもの外出」にも入れました':''),itReg?5000:undefined);lastSig='';showTab(plan?'plan':'active');tick();
 }
 
 /* ---------- 日別一覧 ---------- */
@@ -2502,6 +2506,52 @@ const optHTML=(arr,v)=>(v&&!arr.includes(v)?[v,...arr]:arr).map(x=>`<option${x==
 const wardRadiosHTML=v=>`<div class="radios wards">${WARDS.map(w=>`<label><input type="radio" name="ward" value="${w}"${w===v?' checked':''}>${w}</label>`).join('')}</div>`;
 const STAFF_IN='<label>職員<span class="req">必須</span><input name="staff" list="nurseList"></label>';
 const PT_FIELDS=[['name','氏名'],['kana','ふりがな'],['pid','患者ID'],['sex','性別'],['age','年齢'],['ward','病棟'],['adm','入院形態'],['selfTel','本人の携帯'],['famName','家族の氏名'],['famRel','続柄'],['famTel','家族の電話']];
+// 0.5.0：台帳に新しい患者を1人ずつ登録する（台帳の「＋ 新しい患者を登録」・いつもの外出の「台帳にない人を登録して足す」から）
+function dlgPtNew(opt={}){
+  const relChips=(settings.relPresets||[]).length?`<span class="nchips mchips">${settings.relPresets.map(t=>`<button type="button" class="nchip" data-memo="${esc(t)}" data-field="famRel">${esc(t)}</button>`).join('')}</span>`:'';
+  openDlg('新しい患者を台帳に登録',`<p class="hint" style="margin-top:0">外出・外泊の登録はしません。台帳に入れるだけです（次から「＋ 新規登録」や「いつもの外出」で呼び出せます）。</p>
+    <div class="grid">
+      <label>患者氏名<span class="req">必須</span><input name="name"></label>
+      <label>ふりがな<input name="kana"></label>
+      <label>患者ID<span class="req">必須</span><input name="pid" inputmode="numeric"></label>
+      <label>性別<select name="sex">${optHTML(['','男','女','その他'],'')}</select></label>
+      <label>年齢<input name="age" inputmode="numeric"></label>
+      <label>入院形態<select name="adm">${optHTML(ADMS,'任意入院')}</select></label>
+    </div>
+    <div style="margin:2px 0 10px"><span class="hint">病棟<span class="req">必須</span></span>${wardRadiosHTML('')}</div>
+    <div class="grid">
+      <label>本人の携帯番号<input name="selfTel" inputmode="tel"></label>
+      <label>家族の氏名<input name="famName"></label>
+      <label>家族の続柄<input name="famRel">${relChips}</label>
+      <label>家族の携帯番号<input name="famTel" inputmode="tel"></label>
+      <label>同意書の取得日（タグを持たせる人）<input type="date" name="consentDate"></label>
+    </div>
+    <label class="consent" style="margin:8px 0"><input type="checkbox" name="itsumoOn"${opt.itsumo?' checked':''}><span>「いつもの外出」に入れる<br><span class="hint" style="margin:0">登録の後、行き先・専用タグを決める画面が開きます</span></span></label>
+    ${STAFF_IN}`,
+  [{label:'やめる'},{label:'台帳に登録',cls:'pri',onClick:async f=>{
+    const nv={};PT_FIELDS.forEach(([k])=>{nv[k]=val(f,k);});
+    nv.name=nv.name.replace(/　/g,' ').replace(/\s+/g,' ').trim();nv.kana=hira(nv.kana);nv.pid=half(nv.pid);nv.age=half(nv.age).replace(/[^0-9]/g,'');
+    const other=nv.pid&&patients.find(x=>x.pid===nv.pid);const staff=val(f,'staff'),cd=val(f,'consentDate');const E=[];
+    if(!nv.name)E.push(['name','患者氏名を入れてください']);
+    if(!nv.pid)E.push(['pid','患者IDを入れてください']);
+    else if(other)E.push(['pid',`患者ID ${nv.pid} は、すでに台帳にあります（${other.name}${isDis(other)?'・退院の一覧':''}）。台帳の「修正」から直してください。`]);
+    if(!nv.ward)E.push(['ward','病棟を選んでください']);
+    if(cd&&cd>toDateInput(Date.now()))E.push(['consentDate','同意書の取得日が今日より先になっています']);
+    if(!staff)E.push(['staff','職員を入力してください']);
+    if(E.length)return fieldErrs(f,E);
+    const now=Date.now();const p={id:uid(),count:0,dests:[],createdAt:now,consentDate:'',consentWithdrawn:'',consentLog:[],lastOutAt:0,lastDest:'',lastComp:{alone:true}};
+    PT_FIELDS.forEach(([k])=>{if(k!=='age'||nv.age)p[k]=nv[k];});
+    if(cd){p.consentDate=cd;p.consentLog=[{at:now,text:`同意書取得日を ${ymd(cd)} に登録`,by:staff}];}
+    ptLog(p,'台帳に新規登録',staff);
+    const it=!!f.elements.itsumoOn.checked;if(it){p.itsumo={on:true,dest:IT_DEF.dest};ptLog(p,`いつもの外出に登録（行き先 ${IT_DEF.dest}）`,staff);}
+    await dbPut('patients',p);patients.push(p);rememberNurse(staff);itSig='';
+    if($('#sec-patients').classList.contains('active'))renderPatients();if($('#sec-itsumo').classList.contains('active'))renderItsumo(true);
+    toast(`${p.name} さんを台帳に登録しました`+(it?'（いつもの外出）':''));
+    if(it)setTimeout(()=>dlgItSet(p),50);   // 行き先・専用タグを決める
+  }}]);
+}
+$('#ptNewBtn').addEventListener('click',()=>dlgPtNew());
+
 function dlgPtEdit(p){
   const relChips=(settings.relPresets||[]).length?`<span class="nchips mchips">${settings.relPresets.map(t=>`<button type="button" class="nchip" data-memo="${esc(t)}" data-field="famRel">${esc(t)}</button>`).join('')}</span>`:'';
   openDlg(`患者情報の修正：${p.name}`,`<p class="hint" style="margin-top:0">変えた所は下の「台帳の記録」に残ります。すでに登録した外出・外泊の記録（その時の病棟など）は書き換えません。</p>
@@ -3014,8 +3064,10 @@ function dlgItRule(){const r=itRule();
 
 /* 人を足す・外す（台帳から選ぶ） */
 function dlgItPick(){
-  openDlg('「いつもの外出」の人を足す・外す',`<p class="hint" style="margin-top:0">名前の「設定」で、行き先・帰院予定・専用タグを決めます。患者台帳にいる入院中の人から選びます。</p>
-    <input id="itQ" placeholder="氏名・ふりがな・IDで絞り込み" style="width:100%"><div id="itPickList" class="it-pick"></div>`,[{label:'閉じる'}]);
+  openDlg('「いつもの外出」の人を足す・外す',`<div class="it-pnew"><button type="button" class="btn pri" id="itNewPt">＋ 台帳にない人を登録して足す</button><span class="hint" style="margin:0">台帳にいる人は、下の一覧の「足す」</span></div>
+    <input id="itQ" placeholder="台帳にいる人を、氏名・ふりがな・IDで絞り込み" style="width:100%"><div id="itPickList" class="it-pick"></div>
+    <p class="hint">外すときは、その人の「設定」→「しない（外す）」。</p>`,[{label:'閉じる'}]);
+  $('#itNewPt').addEventListener('click',()=>dlgPtNew({itsumo:true}));
   const draw=()=>{const q=$('#itQ').value.trim();const l=patients.filter(p=>!isDis(p)&&matchQ(p,q)).sort((a,b)=>(itOn(b)-itOn(a))||String(a.kana||a.name).localeCompare(String(b.kana||b.name),'ja')).slice(0,40);
     $('#itPickList').innerHTML=l.map(p=>`<div class="it-prow"><b>${esc(p.name)}</b><span class="it-sub">${esc(wardText(p))}${p.pid?'・ID '+esc(p.pid):''}</span>${itOn(p)?`<span class="lbl lbl-ok">いつもの外出</span>`:''}<span class="sp"></span><button type="button" class="btn sm${itOn(p)?'':' pri'}" data-itset="${p.id}">${itOn(p)?'設定':'足す'}</button></div>`).join('')||'<p class="hint">該当する人がいません（患者台帳に入院中の人がいないか、絞り込みに合う人がいません）</p>';};
   $('#itQ').addEventListener('input',draw);draw();
@@ -3146,7 +3198,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.4.2';
+const APP_VERSION='0.5.0';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

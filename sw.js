@@ -2,7 +2,7 @@
 // 同じドメインに別の外出管理アプリ（gaishutsu-v… / gaishutsu-shisaku-v… / gaishutsu-honban-v…）が並ぶため、
 // 混ざらないよう別の名前のキャッシュを使う。古いキャッシュを消すときも、自分のもの（gaishutsu-tanjikan- で始まる）だけを消す。
 const PREFIX = 'gaishutsu-tanjikan-';
-const CACHE = 'gaishutsu-tanjikan-v0.4.2';
+const CACHE = 'gaishutsu-tanjikan-v0.5.0';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); });
 self.addEventListener('activate', e => {

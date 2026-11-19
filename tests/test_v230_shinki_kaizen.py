@@ -7,12 +7,13 @@
 """
 import os
 from playwright.sync_api import sync_playwright
+from v200_util import jst  # 時計を固定するため
 HERE=os.path.dirname(os.path.abspath(__file__)); APP=os.path.dirname(HERE)
 def main():
     errs=[]
     with sync_playwright() as p:
         b=p.chromium.launch(); pg=b.new_page(viewport={'width':1180,'height':820}); pg.on('pageerror',lambda e:errs.append(str(e)))
-        pg.clock.install(); pg.goto('file://'+APP+'/index.html#detail'); pg.wait_for_timeout(400); pg.clock.run_for(1000); pg.click('#startOv')
+        pg.clock.install(time=jst(2026, 11, 19, 10, 0)); pg.goto('file://'+APP+'/index.html#detail'); pg.wait_for_timeout(400); pg.clock.run_for(1000); pg.click('#startOv')
         def wait(js,tries=60):
             for _ in range(tries):
                 v=pg.evaluate(js)
