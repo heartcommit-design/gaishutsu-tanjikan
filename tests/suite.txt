@@ -39,3 +39,4 @@ test_v241_yotei_tain
 test_v020_itsumo
 test_v030_kiin_kimari
 test_v030_kashidashi
+test_v040_yotei_shashin

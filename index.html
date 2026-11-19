@@ -565,6 +565,14 @@ html:has(dialog[open]) #toast[popover]{bottom:auto;top:calc(env(safe-area-inset-
 .prow .acts .btn{padding:10px 14px}
 .prow .acts [data-pact=go]{font-size:18px;font-weight:800;padding:10px 18px;min-width:132px}
 .prow .acts [data-pact=toggle]{min-width:86px}
+.prow .acts [data-pact=snap]{white-space:nowrap}.prow .acts .lt-s{display:none}
+.prow .acts .btn{white-space:nowrap}
+@media (max-width:1100px){.prow .acts .lt-l{display:none}.prow .acts .lt-s{display:inline}.prow .acts [data-pact=snap]{padding:10px 10px}.prow .acts [data-pact=go]{min-width:0;padding:10px 12px;font-size:17px}.prow .acts [data-pact=toggle]{min-width:0;padding:10px 10px}
+  .prow>.crow{grid-template-columns:72px minmax(150px,1fr) 196px 158px auto;gap:10px}.prow .count{font-size:17px}.prow .tagbadge.sm{font-size:15px}}
+.phst{display:inline-block;font-size:13px;font-weight:700;padding:1px 8px;border-radius:8px;background:var(--mutedbg);color:var(--mutedtx);white-space:nowrap}
+.phst.on{background:var(--okbg);color:var(--oktx)}
+.goq{font-size:18px;font-weight:800;margin:0 0 4px}
+#goPhotoPrev .thumb{width:150px;height:190px;object-fit:cover;border-radius:12px}#goPhotoPrev .nophoto{width:150px;height:190px}
 .prow .acts [data-pact=toggle][aria-expanded=true]{background:var(--selbg);border-color:var(--pritx);font-weight:700}
 .prow .prbody{padding:2px 14px 14px;border-top:1px solid var(--line2);margin:0 0 0 0}
 .prow .prbody .body{margin-top:12px}
@@ -1498,10 +1506,10 @@ async function renderPlans(){
     const ready=[o.tagId?'タグ '+esc(o.tagId)+' 予約済み':'タグは出発時に選ぶ',o.hasPhoto?'服装写真あり':'服装写真なし'];
     html.push(`<article class="card prow${late?' late':''}${open?' open':''}" data-id="${o.id}">
      <div class="crow">${o.tagId?`<div class="tagbadge sm">${esc(o.tagId)}</div>`:'<div class="tagbadge sm none">タグ<br>出発時</div>'}
-      <div class="who"><div class="name">${esc(shownName(o))}</div><div class="sub">${esc([wardText(o),o.kind].filter(Boolean).join('・'))}</div></div>
+      <div class="who"><div class="name">${esc(shownName(o))}</div><div class="sub">${esc([wardText(o),o.kind].filter(Boolean).join('・'))}　${o.hasPhoto?`<span class="phst on">✓ 服装写真${o.photoAt?' '+hhmm(o.photoAt):''}</span>`:'<span class="phst">服装写真なし</span>'}</div></div>
       <div class="times"><span>出発予定 <b>${fmt(o.departAt)}</b></span><span>帰院予定 <b>${fmt(o.dueAt)}</b></span></div>
       <div class="statebox"><span class="lbl lbl-planned">${esc(stLabel(o,'planned'))}</span><div class="count" data-pcount="${o.id}">${planCountText(o,now)}</div></div>
-      <div class="acts"><button class="btn ok" data-pact="go">出発（GO）</button><button class="btn" data-pact="toggle" aria-expanded="${open}">${open?'閉じる':'詳細'}</button></div></div>
+      <div class="acts"><button class="btn" data-pact="snap" aria-label="${o.hasPhoto?'服装写真を撮り直す':'服装写真を撮る'}">📷<span class="lt-l"> ${o.hasPhoto?'撮り直す':'写真を撮る'}</span><span class="lt-s"> 写真</span></button><button class="btn ok" data-pact="go">出発（GO）</button><button class="btn" data-pact="toggle" aria-expanded="${open}">${open?'閉じる':'詳細'}</button></div></div>
      ${open?`<div class="prbody"><div class="body">${urls[o.id]?`<img class="thumb" src="${urls[o.id]}" alt="服装写真" data-pact="photo">`:(mk&&o.hasPhoto?'<div class="nophoto">写真あり<br>（表示で確認）</div>':'<div class="nophoto">写真なし<br>（出発時でも可）</div>')}
      <dl class="info"><dt>出発予定</dt><dd>${fmt(o.departAt)}</dd><dt>帰院予定</dt><dd><b>${fmt(o.dueAt)}</b>（出発が前後しても変わりません）</dd><dt>区分</dt><dd>${esc(o.kind)}</dd>
      <dt>行き先</dt><dd>${esc(o.dest)||'—'}</dd><dt>同行</dt><dd>${o.alone?'単独':(mk?'同行あり':esc(o.compName)+(o.compRel?'（'+esc(o.compRel)+'）':''))}</dd>
@@ -1509,6 +1517,16 @@ async function renderPlans(){
      <div class="actions"><button class="btn" data-pact="edit">内容を確認・変更して出発</button><button class="btn" data-pact="planedit">予定を修正（出発しない）</button><button class="btn" data-pact="cancel">予定を取り消す</button>${mk?'<button class="btn" data-pact="reveal">表示（30秒）</button>':''}</div></div>`:''}</article>`);}
   $('#planList').innerHTML=html.join('')||'<div class="empty">出発前の予定はありません。</div>';
 }
+// 0.4.0：予定の人の服装写真を、出発の前に撮っておく（その外出の写真として保存。帰院で消えるのはこれまでと同じ）
+const hhmm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes());};
+const planSnapIn=Object.assign(document.createElement('input'),{type:'file',accept:'image/*',hidden:true,id:'planSnapIn'});planSnapIn.setAttribute('capture','environment');document.body.appendChild(planSnapIn);
+let planSnapFor=null;
+$('#planList').addEventListener('click',e=>{const b=e.target.closest('[data-pact=snap]');if(!b)return;planSnapFor=b.closest('.card').dataset.id;planSnapIn.click();});
+planSnapIn.addEventListener('change',async e=>{const fl=e.target.files[0];e.target.value='';const o=outings.find(x=>x.id===planSnapFor);planSnapFor=null;if(!fl||!o||o.status!=='planned')return;
+  try{const b=await compress(fl);const had=o.hasPhoto;await dbPut('photos',b,o.id);dropPhotoURL(o.id);o.hasPhoto=true;o.photoAt=Date.now();
+    addLog(o,had?'服装写真を撮り直し（出発の前）':'服装写真を登録（出発の前）','');await saveOuting(o);planSig='';await renderPlans();
+    toast(`${o.name} さんの服装写真を撮りました（${hhmm(o.photoAt)}）。出発（GO）の画面で、今の服装と見比べます`,5000);}
+  catch(err){toast('写真を読み込めませんでした');}});
 // 毎秒：予定タブを開いている間、「出発まで」を進める。出発予定を過ぎた・日付が変わった等の時だけ作り直す
 function updatePlans(now){for(const [id,t] of planOpen)if(t<=now&&!planHold(id))planOpen.delete(id);   // 期限の過ぎた「詳細」を片付ける（印は isPlanOpen で見る）
   if(!$('#sec-plan').classList.contains('active'))return;const list=outings.filter(o=>o.status==='planned').sort((a,b)=>a.departAt-b.departAt);
@@ -1550,10 +1568,12 @@ function dlgGo(o){
   openDlg(`出発（GO）：${o.name}`,`
     <dl class="info"><dt>出発</dt><dd><b class="nw">今（${fmt(now)}）</b>${Math.abs(diff)>=1?` <span class="sub nw">予定より${dur(Math.abs(diff)*60000)}${diff>0?'遅い':'早い'}</span>`:''}</dd>
     <dt>帰院予定</dt><dd><b class="nw">${fmt(o.dueAt)}</b><span class="nw">（変わりません）</span></dd></dl>
-    <div class="gophoto"><div id="goPhotoPrev">${o.hasPhoto?'<div class="nophoto">写真あり<br>（予定で撮影）</div>':'<div class="nophoto">写真なし</div>'}</div>
-      <div style="flex:1;min-width:200px"><span class="hint">服装の写真（首から下）・任意</span>
-        <div class="quick"><label class="btn" style="color:var(--ink);display:inline-flex;align-items:center;margin:0">${o.hasPhoto?'撮り直す／選ぶ':'撮る／選ぶ'}<input type="file" accept="image/*" capture="environment" id="goPhotoInput" hidden></label></div>
-        <p class="hint">顔は写さないでください。写真は帰院の登録で自動的に削除されます。${o.hasPhoto?'撮り直した時だけ、予定で撮った写真と置き換えます。':''}</p></div></div>
+    <div class="gophoto"><div id="goPhotoPrev">${o.hasPhoto?(isMasked(o)?'<div class="nophoto">写真あり<br>（表示で確認）</div>':'<div class="nophoto">写真を<br>読み込み中</div>'):'<div class="nophoto">写真なし</div>'}</div>
+      <div style="flex:1;min-width:200px">
+        <div class="goq" id="goPhotoQ">${o.hasPhoto?`今の服装は、この写真（${o.photoAt?hhmm(o.photoAt)+' 撮影':'予定で撮影'}）と<span class="nw">同じですか</span>`:'服装の写真はまだありません'}</div>
+        <p class="hint" style="margin:0 0 6px">${o.hasPhoto?'違う時は「服装が違う（撮り直す）」で撮り直してください。':'今、撮っておけます（任意。首から下）。'}</p>
+        <div class="quick"><label class="btn" id="goPhotoBtn" style="color:var(--ink);display:inline-flex;align-items:center;margin:0">${o.hasPhoto?'服装が違う（撮り直す）':'📷 撮る'}<input type="file" accept="image/*" capture="environment" id="goPhotoInput" hidden></label>${o.hasPhoto&&isMasked(o)?'<button type="button" class="btn" id="goReveal">写真を表示（30秒）</button>':''}</div>
+        <p class="hint">顔は写さないでください。写真は帰院の登録で自動的に削除されます。${o.hasPhoto?'撮り直した時だけ、前の写真と置き換えます。':''}</p></div></div>
     <label style="margin-top:10px">服装<span class="hint">（任意）</span><textarea name="goClothes" placeholder="例：紺のダウン、灰色のズボン、白いスニーカー">${esc(o.clothes)}</textarea></label>
     ${clothesChips(planPatient(o),'goClothes')}
     <div class="rq" id="goTagRq" style="margin-top:12px"><label style="margin-bottom:0">渡すタグ<span class="req">必須</span><span class="rqst"></span><select name="goTag" id="goTag" class="vh">${goTagOptions(o)}</select></label>
@@ -1586,8 +1606,13 @@ function dlgGo(o){
   gbox.addEventListener('click',e=>{const b=e.target.closest('[data-gotag]');if(!b)return;if(gsel.value!==b.dataset.gotag){gsel.value=b.dataset.gotag;gsel.dispatchEvent(new Event('change',{bubbles:true}));}goRq();});
   gsel.addEventListener('change',e=>{$('#goConsent').innerHTML=goConsentHtml(o,e.target.value);goRq();});
   gnurse.addEventListener('input',goRq);gnurse.addEventListener('change',goRq);goRq();
+  // 撮ってある写真を出す（名前を隠す設定の時は「写真を表示」で30秒）
+  const showPlanPhoto=()=>getPhotoURL(o.id).then(u=>{if(u&&!goPhoto&&$('#goPhotoPrev'))$('#goPhotoPrev').innerHTML=`<img class="thumb" src="${u}" alt="服装写真">`;});
+  if(o.hasPhoto&&!isMasked(o))showPlanPhoto();
+  $('#goReveal')?.addEventListener('click',()=>{revealUntil[o.id]=Date.now()+30000;$('#goReveal').remove();showPlanPhoto();});
   $('#goPhotoInput').addEventListener('change',async e=>{const fl=e.target.files[0];e.target.value='';if(!fl)return;
-    try{goPhoto=await compress(fl);if(goURL)URL.revokeObjectURL(goURL);goURL=URL.createObjectURL(goPhoto);$('#goPhotoPrev').innerHTML=`<img class="thumb" src="${goURL}" alt="服装写真">`;}catch(err){toast('写真を読み込めませんでした');}});
+    try{goPhoto=await compress(fl);if(goURL)URL.revokeObjectURL(goURL);goURL=URL.createObjectURL(goPhoto);$('#goPhotoPrev').innerHTML=`<img class="thumb" src="${goURL}" alt="服装写真">`;
+      $('#goPhotoQ').textContent='今、撮った写真で出発します';$('#goPhotoBtn').firstChild.textContent='撮り直す';}catch(err){toast('写真を読み込めませんでした');}});
   $('#dlg').addEventListener('close',()=>{if(goURL)URL.revokeObjectURL(goURL);},{once:true});
 }
 async function goPlan(o,nurse,tag,cdate,extra){
@@ -1609,7 +1634,7 @@ async function goPlan(o,nurse,tag,cdate,extra){
   // 外出の状態（出発・タグ）を先に保存し、写真はそのあとに保存する（写真で失敗しても出発とタグは食い違わない）
   await saveOuting(o);
   let photoErr=false;
-  if(extra&&extra.photo){try{await dbPut('photos',extra.photo,o.id);dropPhotoURL(o.id);addLog(o,o.hasPhoto?'服装写真を撮り直し（出発時）':'服装写真を登録（出発時）',nurse);o.hasPhoto=true;}
+  if(extra&&extra.photo){try{await dbPut('photos',extra.photo,o.id);dropPhotoURL(o.id);addLog(o,o.hasPhoto?'服装写真を撮り直し（出発時）':'服装写真を登録（出発時）',nurse);o.hasPhoto=true;o.photoAt=Date.now();}
     catch(err){photoErr=true;addLog(o,'服装写真を保存できなかった（出発は登録済み）',nurse);}
     await saveOuting(o);}
   renderPlans();lastSig='';showTab('active');tick();
@@ -3076,7 +3101,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.3.0';
+const APP_VERSION='0.4.0';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

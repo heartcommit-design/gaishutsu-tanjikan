@@ -217,7 +217,7 @@ def main():
         # ================= H7 GO で写真・服装を任意で =================
         tab('plan')
         pg.locator('#planList .card', has_text='テスト 四郎').locator('[data-pact=go]').click(); pg.wait_for_timeout(300)
-        assert '服装の写真（首から下）' in pg.inner_text('#dlgBody')
+        assert '首から下' in pg.inner_text('#dlgBody') and '服装の写真はまだありません' in pg.inner_text('#goPhotoQ')  # 0.4.0：GO の写真の文言を変えた
         pg.set_input_files('#goPhotoInput', PHOTO); pg.wait_for_timeout(500)
         assert pg.locator('#goPhotoPrev img').count() == 1
         pg.fill('#dlgBody textarea[name=goClothes]', '服G 赤いマフラー')

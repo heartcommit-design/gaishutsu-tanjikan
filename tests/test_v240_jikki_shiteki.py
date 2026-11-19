@@ -264,10 +264,10 @@ def part2(b, errs):
             for r in rows:
                 o = r['o']
                 ok(r['tag'] == (o['tag'] or 'タグ出発時'), r)
-                ok(r['name'] == o['name'] and r['sub'] == f"{o['ward']}・{o['kind']}", r)
+                ok(r['name'] == o['name'] and r['sub'].startswith(f"{o['ward']}・{o['kind']}") and ('服装写真' in r['sub']), r)  # 0.4.0：写真の状態を足した
                 ok(f"出発予定 {o['dep']}" in r['times'] and f"帰院予定 {o['due']}" in r['times'], r)
                 ok(r['cnt'].startswith('出発まで '), r)
-                ok(r['btns'] == ['出発（GO）', '詳細'] and not r['body'], r)
+                ok(r['btns'][1:] == ['出発（GO）', '詳細'] and r['btns'][0].startswith('📷') and not r['body'], r)  # 0.4.0：「📷 写真を撮る」を足した
                 ok(r['h'] <= 100, ('1行にたたまれていない', r))
             ok([r['o']['t'] for r in rows] == sorted(r['o']['t'] for r in rows), '出発予定の早い順でない')
             # 日付の見出し：今日・明日・11/15(日)…、件数も合う
