@@ -295,6 +295,8 @@ video{width:100%;border-radius:8px;background:#000}
 .rcx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}.rcx input{flex:1 1 160px;min-width:0}
 .rcpick{white-space:nowrap}.rcpick.on{background:var(--badbg);color:var(--badtx);border-color:var(--bad);font-weight:800}
 @media (max-width:600px){.rc2{grid-template-columns:minmax(0,1fr)}.rc2 .rl{margin-top:6px}}
+.tagret{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:center;margin:8px 0}.tagret .consent{margin:0}
+.lostchk{color:var(--badtx)}
 .rc{display:grid;grid-template-columns:max-content max-content minmax(0,1fr);gap:8px 10px;align-items:center;margin:6px 0 10px}
 .rc .rl{font-weight:700;color:var(--ink)}
 .rc label{display:flex;align-items:center;gap:6px;color:var(--ink);font-size:16px;margin:0}
@@ -1257,7 +1259,7 @@ const DEST_ADD_241='他院受診';
 async function addPresets241(){if(settings.destAdded241)return;const l=settings.destPresets||[];settings.destPresets=l.includes(DEST_ADD_241)?[...l]:[...l,DEST_ADD_241];settings.destAdded241=true;await saveSettings();}
 const NURSE_MAX=60;
 const tagSort=(a,b)=>a.id.localeCompare(b.id,'ja',{numeric:true});
-const TAG_ST={available:'利用可',reserved:'予約中',inuse:'貸出中',missing:'未回収',maint:'点検・電池交換'};
+const TAG_ST={available:'利用可',reserved:'予約中',inuse:'貸出中',missing:'未回収',lost:'紛失',maint:'点検・電池交換'};
 
 async function loadAll(){
   outings=await dbAll('outings');patients=await dbAll('patients');tags=(await dbAll('tags')).sort(tagSort);
@@ -1695,12 +1697,16 @@ document.addEventListener('click',e=>{const mb=e.target.closest('[data-nmore]');
 
 async function doAck(o){o.ackAt=Date.now();addLog(o,'アラームを確認（対応開始）');await saveOuting(o);lastSig='';tick();toast(`アラーム音を止めました。${settings.realertMin}分後に未解決なら再度鳴ります。`);}
 
-const RC_ITEMS=[['belong','持ち物確認'],['state','帰院時の様子'],['med','服薬'],['mental','精神状態']];
+// 0.4.2：帰院時の確認は5項目（帰院時の様子と精神状態が重なるため）。0.4.1 までの記録は RC_ITEMS_OLD で文字にする
+const RC_ITEMS=[['belong','持ち物確認'],['mental','帰院時の精神状態'],['med','服薬'],['drink','飲酒の疑い'],['etc','その他の問題']];
+const RC_ITEMS_OLD=[['belong','持ち物確認'],['state','帰院時の様子'],['med','服薬'],['mental','精神状態']];
 // 0.4.1：帰院時の確認は項目ごとに「問題なし／問題あり」（初めは問題なし）。問題ありの時は、すぐ選べる言葉（RC_PICKS）とメモ
-const RC_PICKS={belong:['禁止物持ち込みあり'],state:[],med:['服薬忘れあり'],mental:['不穏']};
+const RC_PICKS={belong:['禁止物持ち込みあり'],mental:['不穏'],med:['服薬忘れあり'],drink:[],etc:[]};
+const RC_LABELS={drink:['なし','あり']};   // 項目ごとのボタンの言葉（ほかは「問題なし／問題あり」）
+const rcLab=(k,i)=>(RC_LABELS[k]||['問題なし','問題あり'])[i];
 function rcBlockHTML(){return `<div class="rc2">${RC_ITEMS.map(([k,l])=>`<span class="rl">${l}</span>
-  <div class="seg rcseg" data-rck="${k}"><button type="button" class="btn on" data-rcv="ok">問題なし</button><button type="button" class="btn" data-rcv="ng">問題あり</button></div>
-  <div class="rcx" data-rcx="${k}">${RC_PICKS[k].map(t=>`<button type="button" class="nchip rcpick" data-rcpick="${esc(t)}">${esc(t)}</button>`).join('')}<input name="rcm_${k}" placeholder="${RC_PICKS[k].length?'ほかにあれば（任意）':'どんな様子か（任意）'}" hidden></div>
+  <div class="seg rcseg" data-rck="${k}"><button type="button" class="btn on" data-rcv="ok">${rcLab(k,0)}</button><button type="button" class="btn" data-rcv="ng">${rcLab(k,1)}</button></div>
+  <div class="rcx" data-rcx="${k}">${RC_PICKS[k].map(t=>`<button type="button" class="nchip rcpick" data-rcpick="${esc(t)}">${esc(t)}</button>`).join('')}<input name="rcm_${k}" placeholder="${RC_PICKS[k].length?'ほかにあれば（任意）':k==='etc'?'どんな問題か（任意）':'どんな様子か（任意）'}" hidden></div>
   <input type="hidden" name="rcv_${k}" value="ok"><input type="hidden" name="rcp_${k}" value="">`).join('')}</div>`;}
 function rcWire(root){
   const setV=(k,v)=>{root.querySelector(`[name=rcv_${k}]`).value=v;root.querySelectorAll(`[data-rck=${k}] [data-rcv]`).forEach(b=>b.classList.toggle('on',b.dataset.rcv===v));
@@ -1710,17 +1716,17 @@ function rcWire(root){
   root.querySelectorAll('.rcx').forEach(x=>x.addEventListener('click',e=>{const c=e.target.closest('.rcpick');if(!c)return;const k=x.dataset.rcx;c.classList.toggle('on');
     const on=[...x.querySelectorAll('.rcpick.on')].map(y=>y.dataset.rcpick);root.querySelector(`[name=rcp_${k}]`).value=on.join('、');if(on.length)setV(k,'ng');}));
 }
-function rcRead(f){const rc={v2:true};for(const [k] of RC_ITEMS){const ng=val(f,'rcv_'+k)==='ng';
+function rcRead(f){const rc={v2:true,v3:true};for(const [k] of RC_ITEMS){const ng=val(f,'rcv_'+k)==='ng';
   rc[k]={ok:!ng,ng,picks:ng?(val(f,'rcp_'+k)||'').split('、').filter(Boolean):[],memo:ng?val(f,'rcm_'+k):''};}return rc;}
 function rcText(o){if(!o.rc)return '';
-  if(o.rc.v2){const ng=RC_ITEMS.filter(([k])=>o.rc[k]&&o.rc[k].ng).map(([k,l])=>{const x=o.rc[k];const d=[...(x.picks||[]),x.memo].filter(Boolean).join('・');return l+'：問題あり'+(d?'（'+d+'）':'');});
-    const parts=ng.length?[...ng,ng.length<RC_ITEMS.length?'ほかは問題なし':''].filter(Boolean):['すべて問題なし'];if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
-  const parts=RC_ITEMS.map(([k,l])=>{const x=o.rc[k]||{};if(!x.ok&&!x.memo)return '';return l+(x.ok?'✓':'')+(x.memo?'：'+x.memo:'');}).filter(Boolean);if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
+  if(o.rc.v2){const items=o.rc.v3?RC_ITEMS:RC_ITEMS_OLD;const ng=items.filter(([k])=>o.rc[k]&&o.rc[k].ng).map(([k,l])=>{const x=o.rc[k];const d=[...(x.picks||[]),x.memo].filter(Boolean).join('・');return l+'：'+(o.rc.v3?rcLab(k,1):'問題あり')+(d?'（'+d+'）':'');});
+    const parts=ng.length?[...ng,ng.length<items.length?'ほかは問題なし':''].filter(Boolean):['すべて問題なし'];if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
+  const parts=RC_ITEMS_OLD.map(([k,l])=>{const x=o.rc[k]||{};if(!x.ok&&!x.memo)return '';return l+(x.ok?'✓':'')+(x.memo?'：'+x.memo:'');}).filter(Boolean);if(o.rc.other)parts.push('特記：'+o.rc.other);return parts.join('／');}
 function dlgReturn(o){
   openDlg(`帰院登録：${o.name}`,`
     <label>帰院時刻<input type="datetime-local" name="at" value="${toLocalInput(Date.now())}"></label>
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList"></label>
-    ${o.tagId?(tags.find(x=>x.id===o.tagId&&x.owner&&x.owner===o.patientId)?`<p class="hint">専用タグ <b>${esc(o.tagId)}</b> は本人が持ったままにします（回収しません）。</p>`:`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`):''}
+    ${tagRetHTML(o)}
     <h3 style="font-size:17px;margin:12px 0 2px">帰院時の確認<span class="hint" style="font-weight:500;margin-left:8px">初めは「問題なし」。何かあれば「問題あり」</span></h3>
     ${rcBlockHTML()}
     <label>その他特記事項<textarea name="rc_other" placeholder="任意"></textarea></label>
@@ -1737,10 +1743,10 @@ function dlgReturn(o){
     o.rc={...rcRead(f),other:val(f,'rc_other')};o.rcNg=RC_ITEMS.some(([k])=>o.rc[k].ng);
     addLog(o,'帰院'+(val(f,'memo')?'：'+val(f,'memo'):''),nurse);if(rcText(o))addLog(o,'帰院時確認：'+rcText(o),nurse);rememberNurse(nurse);
     if(o.hasPhoto){await dbDel('photos',o.id);dropPhotoURL(o.id);o.hasPhoto=false;o.photoDeletedAt=Date.now();addLog(o,'服装写真を削除（自動）');}
-    if(o.tagId)await itTagOnReturn(o,!!f.elements.tagBack?.checked,nurse);
+    if(o.tagId)await itTagOnReturn(o,!!f.elements.tagBack?.checked,nurse,!!f.elements.tagLost?.checked);
     await saveOuting(o);lastSig='';tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':'')+(o.rcNg?'（帰院時の確認：問題あり）':''));
   }}]);
-  rcWire($('#dlgBody'));
+  rcWire($('#dlgBody'));tagRetWire($('#dlgBody'));
 }
 
 function dlgLost(o){
@@ -2192,7 +2198,7 @@ const COLS=[
  ['行き先',o=>o.dest],['本人携帯',o=>o.selfTel],['家族氏名',o=>o.famName],['家族続柄',o=>o.famRel],['家族携帯',o=>o.famTel],
  ['同行',o=>o.alone?'単独':o.compName],['同行者続柄',o=>o.alone?'':o.compRel],['同行者連絡先',o=>o.alone?'':o.compTel],
  ['服装',o=>o.clothes],['服装写真',o=>o.hasPhoto?'あり':(o.photoDeletedAt?'帰院時に削除':'なし')],
- ['タグ',o=>o.tagId],['タグ回収',o=>o.tagId&&o.status==='returned'?(o.tagKept?'本人が所持（専用）':o.tagReturned?'回収':'未回収'):''],['同意書',o=>o.tagId?(o.consentDate?ymd(o.consentDate):(o.consent?'確認済':'')):''],
+ ['タグ',o=>o.tagId],['タグ回収',o=>o.tagId&&o.status==='returned'?(o.tagLost?'紛失':o.tagKept?'本人が所持（専用）':o.tagReturned?'回収':'未回収'):''],['同意書',o=>o.tagId?(o.consentDate?ymd(o.consentDate):(o.consent?'確認済':'')):''],
  ['出発確認',o=>o.departNurse],['帰院確認',o=>o.returnNurse],['帰院時確認',rcText],['備考',o=>o.note],['最新の経過',o=>lastLog(o)]
 ];
 const WIDE=new Set(['服装','行き先','備考','最新の経過','帰院時確認']);
@@ -2239,7 +2245,7 @@ function printHistory(){
       br([o.selfTel?'本人 '+o.selfTel:'',(o.famName||o.famTel)?'家族 '+[o.famName,o.famRel?'（'+o.famRel+'）':'',o.famTel].filter(Boolean).join(' '):'']),
       o.alone?'単独':br([o.compName+(o.compRel?'（'+o.compRel+'）':''),o.compTel]),
       br([o.clothes,'写真：'+(o.hasPhoto?'あり':(o.photoDeletedAt?'帰院時に削除':'なし'))]),
-      o.tagId?br([o.tagId,o.consent?'同意済':'',o.status==='returned'?(o.tagReturned?'回収':'未回収'):'']):'なし',
+      o.tagId?br([o.tagId,o.consent?'同意済':'',o.status==='returned'?(o.tagLost?'紛失':o.tagKept?'本人が所持':o.tagReturned?'回収':'未回収'):'']):'なし',
       br([o.departNurse,o.returnNurse]),
       br([o.note,rcText(o)?'帰院時確認：'+rcText(o):'',o.status==='cancelled'?'取消理由：'+o.cancelReason:'',lastLog(o)])];
     return '<tr>'+cells.map(c=>`<td>${c}</td>`).join('')+'</tr>';}).join('')||`<tr><td colspan="${cols.length}">この日の外出・外泊はありません</td></tr>`;
@@ -2354,7 +2360,7 @@ function dlgDetail(o){
    <dt>帰院</dt><dd>${o.returnedAt?fmt(o.returnedAt)+'（'+esc(o.returnNurse)+'）':(o.status==='planned'?'出発前（予定）':'まだ帰院していません')}</dd>
    <dt>行き先</dt><dd>${esc(o.dest)||'—'}</dd><dt>同行</dt><dd>${comp}</dd><dt>本人携帯</dt><dd>${esc(o.selfTel)||'—'}</dd><dt>家族</dt><dd>${esc(fam)||'—'}</dd>
    <dt>服装</dt><dd>${esc(o.clothes)||'—'}</dd><dt>服装写真</dt><dd>${photoText(o)}</dd>
-   <dt>タグ</dt><dd>${o.tagId?esc(o.tagId)+(o.status==='returned'?(o.tagReturned?'（回収済み）':'（未回収）'):o.status==='cancelled'?'（取消で空きに戻した）':'（貸出中）')+(o.consentDate?'・同意書 '+ymd(o.consentDate):''):'なし'}</dd>${o.status==='returned'?`<dt>帰院時確認</dt><dd>${esc(rcText(o))||'—'}</dd>`:''}${o.status==='cancelled'?`<dt>取消の理由</dt><dd>${esc(o.cancelReason)}</dd>`:''}${o.note?`<dt>備考</dt><dd>${esc(o.note)}</dd>`:''}</dl>
+   <dt>タグ</dt><dd>${o.tagId?esc(o.tagId)+(o.status==='returned'?(o.tagLost?'（紛失）':o.tagKept?'（本人が所持・専用）':o.tagReturned?'（回収済み）':'（未回収）'):o.status==='cancelled'?'（取消で空きに戻した）':'（貸出中）')+(o.consentDate?'・同意書 '+ymd(o.consentDate):''):'なし'}</dd>${o.status==='returned'?`<dt>帰院時確認</dt><dd>${esc(rcText(o))||'—'}</dd>`:''}${o.status==='cancelled'?`<dt>取消の理由</dt><dd>${esc(o.cancelReason)}</dd>`:''}${o.note?`<dt>備考</dt><dd>${esc(o.note)}</dd>`:''}</dl>
    <h3 style="font-size:17px;margin:14px 0 6px">経過</h3>${logHTML(o)}`,
    o.status==='returned'?[{label:'閉じる'},{label:'記録を修正・取消',onClick:()=>{setTimeout(()=>dlgEdit(o),0);}}]:!isActive(o)?[{label:'閉じる'}]:[{label:'閉じる'},{label:'対応記録を追加',cls:'pri',onClick:()=>{setTimeout(()=>dlgLog(o),0);}}]);
 }
@@ -2960,7 +2966,7 @@ function dlgItBack(o){
   openDlg(`${o.name}　の帰院`,`
     <div class="it-kv">${own?itTagRow(t,false):o.tagId?`<b>タグ</b><span><span class="it-tagbig">${esc(o.tagId)}</span>（貸し出したタグ。下で回収を確かめます）</span>`:itTagRow(null,false)}<b>出発</b><span>${hm(o.departAt)}（${esc(o.dest||'')}）</span><b>帰院予定</b><span>${hm(o.dueAt)}</span><b>帰院</b><span>${hm(Date.now())}（今）</span></div>
     <label>確認した看護師<span class="req">必須</span><input name="nurse" list="nurseList" value="${esc(settings.itsumoNurse||'')}"></label>
-    ${o.tagId&&!own?`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`:''}
+    ${tagRetHTML(o)}
     <div class="it-lbl">帰院時の確認<span class="hint" style="font-weight:500;margin-left:8px">初めは「問題なし」。何かあれば「問題あり」</span></div>
     ${rcBlockHTML()}
     ${o.hasPhoto?'<p class="warnbox">帰院を登録すると服装写真は消えます（元に戻せません）。</p>':''}
@@ -2970,15 +2976,22 @@ function dlgItBack(o){
     const at=Date.now();o.status='returned';o.returnedAt=at;o.returnNurse=nurse;o.rc=rcRead(f);o.rcNg=RC_ITEMS.some(([k])=>o.rc[k].ng);
     addLog(o,'帰院（いつもの外出）',nurse);addLog(o,'帰院時確認：'+rcText(o),nurse);rememberNurse(nurse);settings.itsumoNurse=nurse;saveSettings();
     if(o.hasPhoto){await dbDel('photos',o.id);dropPhotoURL(o.id);o.hasPhoto=false;o.photoDeletedAt=Date.now();addLog(o,'服装写真を削除（自動）');}
-    if(o.tagId)await itTagOnReturn(o,own?true:!!f.elements.tagBack?.checked,nurse);
+    if(o.tagId)await itTagOnReturn(o,own?true:!!f.elements.tagBack?.checked,nurse,!!f.elements.tagLost?.checked);
     await saveOuting(o);lastSig='';itSig='';await tick();toast(`${o.name} さんの帰院を登録しました`+(o.photoDeletedAt?'（写真は削除済み）':'')+(o.rcNg?'（帰院時の確認：問題あり）':''));
   }}]);
   $('#dlgActions').lastElementChild.textContent=`帰院（${hm(Date.now())}）`;
-  rcWire($('#dlgBody'));
+  rcWire($('#dlgBody'));tagRetWire($('#dlgBody'));
   $('#itBackMore').addEventListener('click',()=>dlgReturn(o));
 }
 // 帰院の時のタグ：専用タグは本人が持ったまま（貸出中を解き、回収の扱いにしない）。それ以外は回収したかどうか
-async function itTagOnReturn(o,back,nurse){const t=tags.find(x=>x.id===o.tagId);const own=!!(t&&t.owner&&t.owner===o.patientId);
+// 0.4.2：帰院のタグの欄（回収した／紛失した はどちらか一方だけ。専用タグは「紛失した」だけ）
+function tagRetHTML(o){if(!o.tagId)return '';const own=!!tags.find(x=>x.id===o.tagId&&x.owner&&x.owner===o.patientId);
+  return `<div class="tagret">${own?`<span class="hint" style="margin:0">専用タグ <b>${esc(o.tagId)}</b> は本人が持ったまま（回収しません）</span>`:`<label class="consent"><input type="checkbox" name="tagBack" checked>タグ <b>${esc(o.tagId)}</b> を回収した</label>`}
+    <label class="consent lostchk"><input type="checkbox" name="tagLost">${own?'専用タグを':'タグを'}紛失した</label></div>`;}
+function tagRetWire(root){const b=root.querySelector('[name=tagBack]'),l=root.querySelector('[name=tagLost]');if(!l)return;
+  l.addEventListener('change',()=>{if(l.checked&&b)b.checked=false;});if(b)b.addEventListener('change',()=>{if(b.checked)l.checked=false;});}
+async function itTagOnReturn(o,back,nurse,lost){const t=tags.find(x=>x.id===o.tagId);const own=!!(t&&t.owner&&t.owner===o.patientId);
+  if(lost){if(t){t.outingId=null;t.status='lost';await saveTag(t);}o.tagLost=true;o.tagReturned=false;o.tagKept=false;addLog(o,`${own?'専用タグ':'タグ'} ${o.tagId} 紛失`,nurse);return;}
   if(t){t.outingId=null;t.status=own||back?'available':'missing';await saveTag(t);}
   if(own){o.tagKept=true;addLog(o,`専用タグ ${o.tagId} は本人が持ったまま`,nurse);}
   else{addLog(o,back?`タグ ${o.tagId} 回収`:`タグ ${o.tagId} 未回収`,nurse);o.tagReturned=!!back;}}
@@ -3133,7 +3146,7 @@ $('#soundBtn').addEventListener('click',()=>{const was=soundBtnSeen||$('#soundBt
 $('#muteOn').addEventListener('click',()=>{ensureAudio();soundOnAgain();});
 
 /* ---------- iPad単独動作（オフライン対応） ---------- */
-const APP_VERSION='0.4.1';
+const APP_VERSION='0.4.2';
 {const av=document.getElementById('aboutVer');if(av)av.textContent=APP_VERSION;}
 function updateSwInfo(){const el=$('#swInfo');if(!el)return;
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;

@@ -1,5 +1,5 @@
 """0.4.1 帰院時の確認を「問題なし／問題あり」に（初めは問題なし）：assert で確かめる。
-(a) ふつうの帰院登録：4項目（持ち物確認・帰院時の様子・服薬・精神状態）が初めから「問題なし」。メモ欄は隠れている。
+(a) ふつうの帰院登録：5項目（0.4.2〜 持ち物確認・帰院時の精神状態・服薬・飲酒の疑い・その他の問題）が初めから「問題なし」（飲酒の疑いは「なし」）。メモ欄は隠れている。
 (b) 何も触らずに登録 → 記録は「帰院時確認：すべて問題なし」、o.rcNg は false。
 (c) 「服薬忘れあり」を押すと服薬が「問題あり」になり、メモ欄が出る。「不穏」「禁止物持ち込みあり」も同じ。
     「問題なし」に戻すと、選んだ言葉は外れる。
@@ -40,8 +40,10 @@ with sync_playwright() as p:
     ok(len(act) >= 2, act)
     # (a)(b) 何も触らずに
     pg.evaluate("id=>dlgReturn(outings.find(o=>o.id===id))", act[0]); pg.wait_for_timeout(400)
-    ok(vals(pg) == {'belong': 'ok', 'state': 'ok', 'med': 'ok', 'mental': 'ok'}, vals(pg))
-    ok(pg.locator('#dlgBody .rcseg [data-rcv=ok].on').count() == 4)
+    ok(vals(pg) == {'belong': 'ok', 'mental': 'ok', 'med': 'ok', 'drink': 'ok', 'etc': 'ok'}, vals(pg))
+    ok(pg.locator('#dlgBody .rcseg [data-rcv=ok].on').count() == 5)
+    ok(pg.inner_text('#dlgBody [data-rck=drink]').split() == ['なし', 'あり'], pg.inner_text('#dlgBody [data-rck=drink]'))
+    ok(pg.evaluate("[...document.querySelectorAll('#dlgBody .rc2 .rl')].map(x=>x.textContent)") == ['持ち物確認', '帰院時の精神状態', '服薬', '飲酒の疑い', 'その他の問題'])
     ok(pg.locator('#dlgBody input[name=rcm_med]').is_hidden())
     pg.fill('#dlgBody input[name=nurse]', '(デモ) 看護師 見本')
     pg.locator('#dlgActions button', has_text='帰院を登録').click(); pg.wait_for_timeout(600)
@@ -52,7 +54,7 @@ with sync_playwright() as p:
     pg.click('#dlgBody [data-rcpick="服薬忘れあり"]'); pg.wait_for_timeout(100)
     ok(vals(pg)['med'] == 'ng' and pg.locator('#dlgBody input[name=rcm_med]').is_visible())
     pg.click('#dlgBody [data-rcpick="不穏"]'); pg.click('#dlgBody [data-rcpick="禁止物持ち込みあり"]'); pg.wait_for_timeout(100)
-    ok(vals(pg) == {'belong': 'ng', 'state': 'ok', 'mental': 'ng', 'med': 'ng'}, vals(pg))
+    ok(vals(pg) == {'belong': 'ng', 'mental': 'ng', 'med': 'ng', 'drink': 'ok', 'etc': 'ok'}, vals(pg))
     # 持ち物は「問題なし」に戻す → 選んだ言葉は外れる
     pg.click('#dlgBody [data-rck=belong] [data-rcv=ok]'); pg.wait_for_timeout(100)
     ok(vals(pg)['belong'] == 'ok' and pg.locator('#dlgBody [data-rcpick="禁止物持ち込みあり"].on').count() == 0)
@@ -62,7 +64,7 @@ with sync_playwright() as p:
     pg.locator('#dlgActions button', has_text='帰院を登録').click(); pg.wait_for_timeout(600)
     r = pg.evaluate("id=>{const o=outings.find(x=>x.id===id);return {ng:o.rcNg,t:rcText(o),med:o.rc.med,toast:document.getElementById('toast').textContent}}", act[1])
     ok(r['ng'] is True and r['med']['picks'] == ['服薬忘れあり'] and r['med']['memo'] == '昼の薬を飲み忘れ', r)
-    ok(r['t'] == '服薬：問題あり（服薬忘れあり・昼の薬を飲み忘れ）／精神状態：問題あり（不穏）／ほかは問題なし', r['t'])
+    ok(r['t'] == '帰院時の精神状態：問題あり（不穏）／服薬：問題あり（服薬忘れあり・昼の薬を飲み忘れ）／ほかは問題なし', r['t'])
     ok('問題あり' in r['toast'], r['toast'])
     # 日別一覧の文字にも出る
     ok('服薬忘れあり' in pg.evaluate("id=>{const o=outings.find(x=>x.id===id);return COLS.map(c=>String(c[1](o))).join('|')}", act[1]))
@@ -73,12 +75,12 @@ with sync_playwright() as p:
     pg.fill('#dlgBody input[name=nurse]', '(デモ) 看護師 見本'); pg.locator('#dlgActions button').last.click(); pg.wait_for_timeout(800)
     oid = pg.evaluate("id=>outings.find(x=>x.patientId===id&&x.status==='out').id", a)
     pg.click(f'[data-itback="{oid}"]'); pg.wait_for_timeout(400)
-    ok(pg.locator('#dlgBody .rcseg [data-rcv=ok].on').count() == 4)
+    ok(pg.locator('#dlgBody .rcseg [data-rcv=ok].on').count() == 5)
     pg.click('#dlgBody [data-rcpick="不穏"]')
     pg.screenshot(path=os.path.join(OUT, 'v041_itsumo_kiin.png'))
     pg.locator('#dlgActions button').last.click(); pg.wait_for_timeout(700)
     r = pg.evaluate("id=>{const o=outings.find(x=>x.id===id);return {st:o.status,ng:o.rcNg,log:o.log.map(l=>l.text).join('|')}}", oid)
-    ok(r['st'] == 'returned' and r['ng'] and '帰院時確認：精神状態：問題あり（不穏）／ほかは問題なし' in r['log'], r)
+    ok(r['st'] == 'returned' and r['ng'] and '帰院時確認：帰院時の精神状態：問題あり（不穏）／ほかは問題なし' in r['log'], r)
     # (f)
     pg.click('nav button[data-tab=plan]'); pg.wait_for_timeout(600)
     ok(pg.evaluate("[...document.querySelectorAll('#planList [data-pact=snap] .lt-l')].every(x=>x.textContent.trim()==='写真を撮る')"))
